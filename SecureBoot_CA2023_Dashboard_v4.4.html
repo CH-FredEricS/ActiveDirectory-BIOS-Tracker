@@ -1,0 +1,2033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Boot CA 2023 | Status Dashboard</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:       #f0f4f8;
+  --s0:       #ffffff;
+  --s1:       #f8fafc;
+  --s2:       #eef2f7;
+  --b0:       #dde5ef;
+  --b1:       rgba(2,132,199,.22);
+  --cyan:     #0284c7;
+  --cyan-dim: rgba(2,132,199,.08);
+  --text:     #334155;
+  --hi:       #0f172a;
+  --muted:    #64748b;
+  --dim:      #94a3b8;
+
+  --ok:       #16a34a; --ok-bg:  #f0fdf4;
+  --err:      #dc2626; --err-bg: #fef2f2;
+  --warn:     #d97706; --warn-bg:#fffbeb;
+  --inf:      #6366f1; --inf-bg: #f5f3ff;
+  --ora:      #ea580c; --ora-bg: #fff7ed;
+
+  --mono:'Consolas','Cascadia Code','Courier New',monospace;
+  --ui:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --r:4px;
+}
+
+body{font-family:var(--ui);font-size:13px;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+button{cursor:pointer;font-family:var(--ui);font-size:12px}
+select option{background:var(--s2);color:var(--text)}
+
+/* ─── Upload ─── */
+#screen-upload{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px;
+  background:radial-gradient(ellipse at 30% 50%,rgba(2,132,199,.07) 0,transparent 60%),
+             radial-gradient(ellipse at 70% 50%,rgba(22,163,74,.04) 0,transparent 60%),var(--bg);
+}
+.upload-wrap{text-align:center;max-width:480px;width:100%}
+.shield{font-size:52px;display:block;margin:0 auto 20px;
+  animation:shield-pulse 3s ease-in-out infinite;
+  filter:drop-shadow(0 0 10px rgba(2,132,199,.25))}
+@keyframes shield-pulse{
+  0%,100%{filter:drop-shadow(0 0 8px rgba(2,132,199,.18));transform:scale(1)}
+  50%{filter:drop-shadow(0 0 18px rgba(2,132,199,.40));transform:scale(1.04)}
+}
+.upload-eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:2.5px;color:var(--cyan);margin-bottom:24px}
+.upload-wrap h1{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--hi);letter-spacing:1px;margin-bottom:4px}
+.dropzone{border:1px dashed var(--b1);border-radius:var(--r);padding:36px 24px;cursor:pointer;
+  background:var(--s0);transition:border-color .18s,background .18s;position:relative;overflow:hidden}
+.dropzone::before{content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--cyan-dim) 0,transparent 50%);opacity:0;transition:opacity .18s}
+.dropzone:hover::before,.dropzone.over::before{opacity:1}
+.dropzone:hover,.dropzone.over{border-color:var(--cyan);background:var(--s1)}
+.dz-main{color:var(--hi);font-size:14px;margin-bottom:7px;position:relative}
+.dz-link{color:var(--cyan);text-decoration:underline;text-underline-offset:2px}
+.dz-hint{color:var(--muted);font-size:12px;position:relative}
+.upload-note{margin-top:14px;font-size:11px;color:var(--dim)}
+
+/* ─── Dashboard shell ─── */
+#screen-dashboard{display:flex;flex-direction:column;min-height:100vh}
+
+/* Topbar */
+.topbar{position:sticky;top:0;z-index:200;display:flex;align-items:center;
+  justify-content:space-between;padding:0 20px;height:46px;
+  background:var(--s0);border-bottom:1px solid var(--b0);gap:16px}
+.tbar-l{display:flex;align-items:center;gap:14px;min-width:0;overflow:hidden}
+.logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--hi);
+  letter-spacing:.5px;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);
+  animation:blink 2.4s ease-in-out infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.src-tag{font-size:11px;color:var(--muted);border-left:1px solid var(--b0);
+  padding-left:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbar-r{display:flex;gap:8px;flex-shrink:0}
+.btn{padding:5px 12px;border-radius:var(--r);border:1px solid var(--b0);
+  background:var(--s1);color:var(--text);transition:all .14s}
+.btn:hover{background:var(--s2);border-color:var(--b1)}
+.btn-c{border-color:var(--cyan);color:var(--cyan)}
+.btn-c:hover{background:var(--cyan-dim)}
+
+/* Summary */
+.summary{padding:16px 20px 0}
+.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+@media(max-width:900px){.cards{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--s0);border:1px solid var(--b0);border-top:2px solid var(--ca,var(--b0));
+  border-radius:var(--r);padding:12px 14px;cursor:pointer;transition:all .14s}
+.card:hover{background:var(--s1);border-color:var(--ca,var(--b1))}
+.card.on{background:var(--s1);border-color:var(--ca);box-shadow:0 0 0 1px var(--ca)}
+.card .lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px}
+.card .num{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--ca,var(--hi));line-height:1}
+
+/* Panels */
+.panels{display:flex;gap:12px;padding:12px 20px 0;flex-wrap:wrap}
+.panel{flex:1 1 280px;background:var(--s0);border:1px solid var(--b0);
+  border-radius:var(--r);padding:14px 16px;min-width:0}
+.ptitle{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:12px}
+
+/* Confidence rows */
+.crow{display:flex;align-items:center;gap:8px;margin-bottom:7px;cursor:pointer;
+  border-radius:3px;padding:2px 4px;transition:background .12s}
+.crow:hover{background:var(--s1)}
+.crow.fil{background:var(--s2)}
+.clbl{font-size:11px;color:var(--muted);flex:0 0 150px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cbar-wrap{flex:1;height:4px;background:var(--s2);border-radius:2px;overflow:hidden}
+.cbar{height:100%;border-radius:2px;transition:width .35s}
+.cnum{font-family:var(--mono);font-size:11px;color:var(--text);min-width:28px;text-align:right}
+
+/* HP stats */
+.hrow{display:flex;justify-content:space-between;align-items:center;
+  padding:6px 0;border-bottom:1px solid var(--b0)}
+.hrow:last-of-type{border:none}
+.hlbl{font-size:12px;color:var(--muted)}
+.hnum{font-family:var(--mono);font-size:15px;font-weight:700}
+
+/* Filter bar */
+.filters{padding:12px 20px 0}
+.fbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  background:var(--s0);border:1px solid var(--b0);border-radius:var(--r);padding:8px 12px}
+.fbar input,.fbar select{background:var(--s1);border:1px solid var(--b0);border-radius:var(--r);
+  color:var(--text);font-size:12px;font-family:var(--ui);padding:4px 8px;outline:none;transition:border-color .14s}
+.fbar input:focus,.fbar select:focus{border-color:var(--cyan)}
+#f-search{width:200px;font-family:var(--mono)}
+#f-status,#f-conf{min-width:160px}
+.flbl{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);
+  cursor:pointer;user-select:none}
+.flbl:has(:checked){color:var(--text)}
+.fsep{color:var(--b0)}
+.fcount{margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap}
+
+/* Table */
+.tbl-wrap{padding:12px 20px 40px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:var(--s0);
+  border:1px solid var(--b0);border-radius:var(--r);overflow:hidden}
+thead tr{background:var(--s1);border-bottom:1px solid var(--b0)}
+th{padding:8px 12px;text-align:left;font-size:10px;font-weight:600;
+  text-transform:uppercase;letter-spacing:1px;color:var(--muted);
+  cursor:pointer;user-select:none;white-space:nowrap}
+th:hover{color:var(--text)}
+th.sa .si::after{content:' ↑';color:var(--cyan)}
+th.sd .si::after{content:' ↓';color:var(--cyan)}
+th.ns{cursor:default;width:30px}
+td{padding:7px 12px;border-bottom:1px solid var(--b0);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:not(.drow):hover td{background:var(--s1)}
+.etd{text-align:center;cursor:pointer;color:var(--dim);font-size:10px;transition:color .12s}
+.etd:hover{color:var(--cyan)}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;
+  border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.pulse .dot{animation:dpulse 2s ease-in-out infinite}
+@keyframes dpulse{0%,100%{opacity:1}50%{opacity:.25}}
+.bg{color:var(--ok);background:var(--ok-bg)}
+.br{color:var(--err);background:var(--err-bg)}
+.bw{color:var(--warn);background:var(--warn-bg)}
+.bi{color:var(--inf);background:var(--inf-bg)}
+.bc{color:var(--cyan);background:var(--cyan-dim)}
+.bd{color:var(--dim);background:var(--s2)}
+
+.stale-pip{display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--ora);border:1px solid var(--ora);
+  border-radius:3px;padding:0 4px;margin-left:5px;vertical-align:middle}
+
+/* Detail row */
+.drow td{padding:0;background:var(--s1) !important}
+.dcontent{padding:16px 20px;display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px;
+  border-top:1px solid var(--b1)}
+.dgtitle{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;
+  color:var(--cyan);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--b0)}
+.df{display:flex;align-items:flex-start;gap:6px;margin-bottom:5px}
+.dk{font-size:10px;color:var(--dim);flex:0 0 112px;padding-top:1px}
+.dv{font-size:11px;color:var(--text);word-break:break-all}
+.dm{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.dit{color:var(--muted);font-style:italic;word-break:break-word;line-height:1.4}
+
+/* Empty */
+.empty{text-align:center;padding:48px;color:var(--muted)}
+.empty .ei{font-size:28px;margin-bottom:8px}
+
+/* ─── Column info icon ─── */
+.th-info{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:13px;height:13px;border-radius:50%;
+  background:var(--s2);border:1px solid var(--b0);
+  color:var(--muted);font-size:8px;font-weight:700;
+  font-family:var(--ui);text-transform:none;letter-spacing:0;
+  cursor:help;margin-left:5px;vertical-align:middle;
+  transition:background .14s,color .14s,border-color .14s;
+  line-height:1;flex-shrink:0;
+}
+.th-info:hover{background:var(--cyan);color:#fff;border-color:var(--cyan)}
+
+/* ─── Tooltip card ─── */
+#col-tip{
+  position:fixed;z-index:9999;width:300px;
+  background:#fff;border:1px solid var(--b0);
+  border-radius:6px;
+  box-shadow:0 6px 24px rgba(0,0,0,.11),0 1px 4px rgba(0,0,0,.07);
+  padding:14px 16px;
+  font-size:12px;font-family:var(--ui);
+  color:var(--text);line-height:1.55;
+  pointer-events:none;display:none;
+}
+#col-tip .tip-title{
+  font-size:13px;font-weight:700;color:var(--hi);
+  display:block;margin-bottom:7px;
+}
+#col-tip .tip-body{color:var(--muted);font-size:12px;margin-bottom:0}
+#col-tip .tip-body + .tip-body{margin-top:5px}
+#col-tip .tip-reg{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  background:var(--s2);border-radius:3px;padding:3px 6px;
+  display:block;margin:6px 0;word-break:break-all;
+}
+#col-tip .tip-em{color:var(--cyan);font-style:normal;font-weight:600}
+#col-tip .tip-vals{
+  margin-top:9px;border-top:1px solid var(--b0);padding-top:9px;
+}
+#col-tip .tip-val{display:flex;gap:7px;margin-bottom:5px;align-items:flex-start}
+#col-tip .tip-val:last-child{margin-bottom:0}
+#col-tip .tv-name{
+  font-family:var(--mono);font-size:10px;color:var(--cyan);
+  flex:0 0 auto;white-space:nowrap;padding-top:1px;
+}
+#col-tip .tv-desc{color:var(--muted);font-size:11px}
+#col-tip .tip-note{
+  margin-top:9px;padding-top:9px;border-top:1px solid var(--b0);
+  font-size:11px;color:var(--dim);
+}
+</style>
+</head>
+<body>
+
+<!-- ─── Upload screen ─── -->
+<div id="screen-upload">
+  <div class="upload-wrap">
+    <span class="shield">🔐</span>
+    <p class="upload-eyebrow">Active Directory &bull; Secure Boot Status</p>
+    <h1>SECURE BOOT CA 2023</h1>
+    <div style="height:22px"></div>
+    <div id="dropzone" class="dropzone">
+      <p class="dz-main">Drop JSON file(s) here or <span class="dz-link" id="browse">click to browse</span></p>
+      <p class="dz-hint" style="margin-top:8px">Combined aggregator JSON or individual per-device files &mdash; multiple files accepted</p>
+    </div>
+    <p class="upload-note">All processing is local &mdash; no data leaves this browser.</p>
+  </div>
+</div>
+
+<!-- ─── Dashboard ─── -->
+<div id="screen-dashboard" hidden>
+  <header class="topbar">
+    <div class="tbar-l">
+      <div class="logo"><span class="logo-dot"></span>SBCA2023</div>
+      <span class="src-tag" id="src-tag"></span>
+    </div>
+    <div class="tbar-r">
+      <button class="btn" id="btn-reload">Load new file</button>
+      <button class="btn btn-c" id="btn-export-csv">Export CSV</button>
+      <button class="btn btn-c" id="btn-export-html">Export HTML</button>
+    </div>
+  </header>
+
+  <section class="summary">
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section class="panels">
+    <div class="panel">
+      <div class="ptitle">Confidence Level Distribution</div>
+      <div id="conf-panel"></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">BIOS Compliance &mdash; HP &amp; Dell</div>
+      <div id="bios-panel"></div>
+    </div>
+  </section>
+
+  <section class="filters">
+    <div class="fbar">
+      <input type="text" id="f-search" placeholder="Search computer name&hellip;" autocomplete="off" spellcheck="false">
+      <select id="f-status"><option value="">All statuses</option></select>
+      <select id="f-conf"><option value="">All confidence levels</option></select>
+      <span class="fsep">|</span>
+      <label class="flbl"><input type="checkbox" id="f-bios-req"> BIOS update needed</label>
+      <label class="flbl"><input type="checkbox" id="f-stale"> Stale only</label>
+      <button class="btn" id="btn-clear" style="padding:4px 10px">Clear</button>
+      <span class="fcount" id="fcount"></span>
+    </div>
+  </section>
+
+  <section class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th data-col="ComputerName">Computer Name <span class="si"></span></th>
+        <th data-col="CollectedAt">Collected <span class="si"></span></th>
+        <th data-col="Status">Status <span class="si"></span><span class="th-info" data-tip="status">i</span></th>
+        <th data-col="ConfidenceLevel">Confidence Level <span class="si"></span><span class="th-info" data-tip="confidence">i</span></th>
+        <th data-col="SystemModel">Model <span class="si"></span></th>
+        <th data-col="BiosReadyStatus">BIOS Ready <span class="si"></span><span class="th-info" data-tip="biosready">i</span></th>
+        <th data-col="LastEventId">Last Event <span class="si"></span></th>
+        <th data-col="RegStatus">Reg Status <span class="si"></span><span class="th-info" data-tip="regstatus">i</span></th>
+        <th class="ns"></th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </section>
+</div>
+
+<input type="file" id="file-input" accept=".json" multiple hidden>
+
+<script>
+/* ─── Lookup tables ─────────────────────────────────────────────────── */
+const SL={
+  COMPLETE:'Complete',COMPLETE_REG:'Complete (Reg)',NOT_STARTED:'Not Started',
+  IN_PROGRESS:'In Progress',PENDING_REBOOT:'Pending: Reboot',
+  PENDING_FIRMWARE:'Pending: Firmware',PENDING:'Pending',
+  BLOCKED_BITLOCKER:'Blocked: BitLocker',BLOCKED_BOOTLOADER:'Blocked: Boot Loader',
+  BLOCKED_FIRMWARE_ISSUE:'Blocked: Firmware',BLOCKED_NO_KEK:'Blocked: No KEK',
+  BLOCKED:'Blocked',ERROR_FIRMWARE:'Error: Firmware',ERROR_UNEXPECTED:'Error: Unexpected',
+  ERROR_DB_MISSING:'Error: DB Missing',ERROR_BOOTMGR_UNSIGNED:'Error: Boot Mgr',
+  ERROR:'Error',PARTIAL_REG:'Partial (Reg)',NO_EVENTS:'No Events',
+  LOG_ACCESS_ERR:'Log Error',UNKNOWN:'Unknown'
+};
+
+const CBARCOL={HighConfidence:'var(--ok)',TemporarilyPaused:'var(--warn)',
+  NotSupported:'var(--err)',UnderObservation:'var(--cyan)',NoData:'var(--dim)',Other:'var(--inf)'};
+const CBADGE={HighConfidence:'bg',TemporarilyPaused:'bw',
+  NotSupported:'br',UnderObservation:'bc',NoData:'bd',Other:'bi'};
+const CGLBL={HighConfidence:'High Confidence',TemporarilyPaused:'Temporarily Paused',
+  UnderObservation:'Under Observation',NotSupported:'Not Supported',
+  NoData:'No Data Observed',Other:'Other'};
+
+/* ─── BIOS compatibility tables (HP + Dell) ─────────────── */
+/* DELL_BIOS_TABLE */
+const DELL_BIOS_TABLE={
+  "alienware 16 area-51 aa16250":"1.7.0",
+  "alienware 16 aurora ac16250":"1.6.3",
+  "alienware 16x aurora ac16251":"1.5.4",
+  "alienware 18 area-51 aa18250":"1.7.0",
+  "alienware area 51m r2":"1.35.0",
+  "alienware area-51 aat2250":"1.9.1",
+  "alienware area-51 aat2265":"1.0.0",
+  "alienware aurora act1250":"1.8.1",
+  "alienware aurora r13":"1.29.0",
+  "alienware aurora r15":"1.25.1",
+  "alienware aurora r15 amd":"1.21.0",
+  "alienware aurora r16":"2.21.1",
+  "alienware aurora ryzen edition r14":"2.27.1",
+  "alienware m15 r3":"1.35.0",
+  "alienware m15 r6":"1.40.0",
+  "alienware m15 r7":"1.35.0",
+  "alienware m15 r7 amd":"1.24.0",
+  "alienware m15 ryzen edition r5":"1.29.1",
+  "alienware m16 r1":"1.29.1",
+  "alienware m16 r1 amd":"1.20.0",
+  "alienware m16 r2":"1.15.0",
+  "alienware m17 r3":"1.35.0",
+  "alienware m17 r5 amd":"1.24.0",
+  "alienware m18":"1.20.0",
+  "alienware m18 r1":"1.29.1",
+  "alienware m18 r2":"1.17.1",
+  "alienware x14":"1.29.0",
+  "alienware x14 r2":"1.26.1",
+  "alienware x15 r1":"1.31.1",
+  "alienware x15 r2":"1.30.0",
+  "alienware x16 r1":"1.26.1",
+  "alienware x16 r2":"1.15.0",
+  "alienware x17 r1":"1.31.1",
+  "alienware x17 r2":"1.30.0",
+  "chengming 3900":"1.34.1",
+  "chengming 3910":"1.29.1",
+  "chengming 3911":"1.29.1",
+  "chengming 3910/3911":"1.29.1",
+  "dell 14 dc14250":"1.1.1",
+  "dell 14 dc14255":"1.4.1",
+  "dell 14 plus 2-in-1 db04250":"1.6.0",
+  "dell 14 plus 2-in-1 db04255":"1.4.1",
+  "dell 14 plus db14250":"1.6.0",
+  "dell 14 plus db14255":"1.4.1",
+  "dell 14 premium da14250":"1.3.2",
+  "dell 15 dc15250":"1.2.1",
+  "dell 15 dc15255":"1.3.1",
+  "dell 16 dc16250":"1.3.0",
+  "dell 16 dc16251":"1.3.0",
+  "dell 16 dc16255":"1.0.1",
+  "dell 16 dc16256":"1.0.1",
+  "dell 16 plus 2-in-1 db06250":"1.6.0",
+  "dell 16 plus db16250":"1.6.0",
+  "dell 16 plus db16255":"1.4.1",
+  "dell 16 premium da16250":"1.5.0",
+  "dell 24 all-in-one ec24250":"1.7.1",
+  "dell 27 all-in-one ec27250":"1.7.1",
+  "dell laptop dc14255":"1.4.1",
+  "dell slim ecs1250":"1.6.2",
+  "dell tower ect1250":"1.6.2",
+  "dell tower plus ebt2250":"1.8.1",
+  "dell g15 5510":"1.36.0",
+  "dell g15 5511":"1.39.0",
+  "dell g15 5515":"1.28.1",
+  "dell g15 5520":"1.35.0",
+  "dell g15 5525":"1.24.0",
+  "dell g15 5530":"1.28.1",
+  "dell g15 5535":"1.16.0",
+  "dell g16 7620":"1.35.0",
+  "dell g16 7630":"1.28.1",
+  "dell pro 13 plus pb13250":"2.6.1",
+  "dell pro 13 plus pb13255":"1.7.0",
+  "dell pro 13 premium pa13250":"2.6.1",
+  "dell pro 14 essential pv14250":"1.1.1",
+  "dell pro 14 essential pv14255":"1.5.0",
+  "dell pro 14 pc14250":"1.7.0",
+  "dell pro 14 pc14255":"1.7.0",
+  "dell pro 14 plus pb14250":"2.6.1",
+  "dell pro 14 plus pb14255":"1.7.0",
+  "dell pro 14 premium pa14250":"2.6.1",
+  "dell pro 15 essential pv15250":"1.0.0",
+  "dell pro 15 essential pv15255":"1.2.1",
+  "dell pro 16 pc16250":"1.7.0",
+  "dell pro 16 pc16255":"1.7.0",
+  "dell pro 16 plus pb16250":"2.6.1",
+  "dell pro 16 plus pb16255":"1.7.0",
+  "dell pro 24 all-in-one plus qb24250":"1.8.1",
+  "dell pro 24 all-in-one qc24250":"1.8.1",
+  "dell pro 24 all-in-one qc24251":"1.8.1",
+  "dell pro laptop pc14250":"1.7.0",
+  "dell pro laptop pc16250":"1.7.0",
+  "dell pro max 14 mc14250":"1.7.0",
+  "dell pro max 14 mc14255":"1.2.1",
+  "dell pro max 14 premium ma14250":"1.4.2",
+  "dell pro max 16 mc16250":"1.7.0",
+  "dell pro max 16 mc16255":"1.2.1",
+  "dell pro max 16 plus mb16250":"1.3.3",
+  "dell pro max 16 premium ma16250":"1.4.2",
+  "dell pro max 18 plus mb18250":"1.3.3",
+  "dell pro max micro fcm2250":"1.7.1",
+  "dell pro max slim fcs1250":"1.7.1",
+  "dell pro max tower t2 fct2250":"1.7.1",
+  "dell pro max with gb10 fcm1253":"1.1.0",
+  "dell pro micro qcm1250":"1.7.0",
+  "dell pro micro qcm1255":"1.4.2",
+  "dell pro micro qct1255":"1.4.2",
+  "dell pro micro plus qbm1250":"1.7.0",
+  "dell pro rugged 10 tablet":"1.1.0",
+  "dell pro rugged 12 tablet":"1.1.0",
+  "dell pro rugged 13 ra13250":"1.9.0",
+  "dell pro rugged 14 rb14250":"1.9.0",
+  "dell pro slim qcs1250":"1.7.0",
+  "dell pro slim qcs1255":"1.4.2",
+  "dell pro slim essential qvs1260":"1.8.1",
+  "dell pro slim plus qbs1250":"1.7.0",
+  "dell pro tower essential qvt1260":"1.8.1",
+  "dell pro tower qct1250":"1.7.0",
+  "dell pro tower qct1255":"1.4.2",
+  "dell pro tower plus qbt1250":"1.7.0",
+  "inspiron 13 5320":"1.28.0",
+  "inspiron 13 5330":"1.25.1",
+  "inspiron 14 3420":"1.0.14",
+  "inspiron 14 5410 2-in-1":"2.36.0",
+  "inspiron 14 5420":"1.31.0",
+  "inspiron 14 5425":"1.24.0",
+  "inspiron 14 5430":"1.24.1",
+  "inspiron 14 5435":"1.18.0",
+  "inspiron 14 5440":"1.15.1",
+  "inspiron 14 5441":"2.11.0",
+  "inspiron 14 5445":"1.13.1",
+  "inspiron 14 7420 2-in-1":"1.30.1",
+  "inspiron 14 7425 2-in-1":"1.24.0",
+  "inspiron 14 7430 2-in-1":"1.24.1",
+  "inspiron 14 7435 2-in-1":"1.18.0",
+  "inspiron 14 7440 2-in-1":"1.15.1",
+  "inspiron 14 7441":"2.11.0",
+  "inspiron 14 7445 2-in-1":"1.13.1",
+  "inspiron 14 plus 7420":"1.32.0",
+  "inspiron 14 plus 7430":"1.24.1",
+  "inspiron 14 plus 7440":"1.17.1",
+  "inspiron 15 3510":"1.28.0",
+  "inspiron 15 3511":"1.40.0",
+  "inspiron 15 3515":"1.36.1",
+  "inspiron 15 3520":"1.35.0",
+  "inspiron 15 3521":"1.23.0",
+  "inspiron 15 3525":"1.31.1",
+  "inspiron 15 3530":"1.23.2",
+  "inspiron 15 3535":"1.24.1",
+  "inspiron 15 5510":"2.37.0",
+  "inspiron 15 5510/5518":"2.37.0",
+  "inspiron 15 5518":"2.37.0",
+  "inspiron 16 5620":"1.31.0",
+  "inspiron 16 5625":"1.24.0",
+  "inspiron 16 5630":"1.24.1",
+  "inspiron 16 5635":"1.18.0",
+  "inspiron 16 5640":"1.15.1",
+  "inspiron 16 5645":"1.14.2",
+  "inspiron 16 7620 2-in-1":"1.30.1",
+  "inspiron 16 7630 2-in-1":"1.24.1",
+  "inspiron 16 7635 2-in-1":"1.18.0",
+  "inspiron 16 7640 2-in-1":"1.16.0",
+  "inspiron 16 plus 7620":"1.32.0",
+  "inspiron 16 plus 7630":"1.24.1",
+  "inspiron 16 plus 7640":"1.17.1",
+  "inspiron 24 5415 all-in-one":"1.29.0",
+  "inspiron 24 5420 all-in-one":"1.22.1",
+  "inspiron 24 5430 all-in-one":"1.15.1",
+  "inspiron 27 7720 all-in-one":"1.22.1",
+  "inspiron 27 7730 all-in-one":"1.15.1",
+  "inspiron 3020 desktop":"1.29.1",
+  "inspiron 3020 small desktop":"1.29.1",
+  "inspiron 3030":"1.19.1",
+  "inspiron 3030s":"1.19.1",
+  "inspiron 3501":"1.41.0",
+  "inspiron 3502":"1.25.0",
+  "inspiron 3910":"1.34.1",
+  "inspiron 5400":"1.39.0",
+  "inspiron 5400/5401":"1.39.0",
+  "inspiron 5401":"1.39.0",
+  "inspiron 5401 all-in-one":"1.39.0",
+  "inspiron 5410 all-in-one":"1.32.1",
+  "inspiron 5415":"1.30.0",
+  "inspiron 5515":"1.30.0",
+  "inspiron 7415 2-in-1":"1.31.0",
+  "inspiron 7700 all-in-one":"1.39.0",
+  "inspiron 7710 all-in-one":"1.32.1",
+  "dell edge gateway 5000":"1.34.0",
+  "edge gateway 3000 series":"1.24.0",
+  "embedded box pc 3000":"1.30.0",
+  "embedded box pc 5000":"1.31.0",
+  "latitude 12 rugged extreme 7214":"1.52.0",
+  "latitude 3120":"1.37.0",
+  "latitude 3140":"1.25.5",
+  "latitude 3140 2-in-1":"1.25.5",
+  "latitude 3190":"1.42.0",
+  "latitude 3190 2-in-1":"1.42.0",
+  "latitude 3301":"1.37.0",
+  "latitude 3310":"1.31.0",
+  "latitude 3310 2-in-1":"1.30.0",
+  "latitude 3320":"1.40.0",
+  "latitude 3330":"1.32.1",
+  "latitude 3340":"1.25.1",
+  "latitude 3400":"1.39.0",
+  "latitude 3410":"1.36.0",
+  "latitude 3420":"1.44.0",
+  "latitude 3430":"1.30.1",
+  "latitude 3440":"1.25.1",
+  "latitude 3450":"1.16.1",
+  "latitude 3500":"1.39.0",
+  "latitude 3510":"1.36.0",
+  "latitude 3520":"1.44.0",
+  "latitude 3530":"1.30.1",
+  "latitude 3540":"1.25.1",
+  "latitude 3550":"1.16.1",
+  "latitude 5300":"1.37.0",
+  "latitude 5300 2-in-1":"1.37.0",
+  "latitude 5310":"1.30.0",
+  "latitude 5310 2-in-1":"1.30.0",
+  "latitude 5320":"1.46.0",
+  "latitude 5330":"1.32.1",
+  "latitude 5340":"1.24.1",
+  "latitude 5350":"1.16.1",
+  "latitude 5400":"1.41.1",
+  "latitude 5401":"1.42.1",
+  "latitude 5410":"1.38.1",
+  "latitude 5411":"1.39.1",
+  "latitude 5420":"1.49.0",
+  "latitude 5420 rugged":"1.40.0",
+  "latitude 5421":"1.41.0",
+  "latitude 5424 rugged":"1.40.0",
+  "latitude 5430":"1.32.1",
+  "latitude 5430 rugged laptop":"1.39.0",
+  "latitude 5431":"1.33.1",
+  "latitude 5440":"1.25.1",
+  "latitude 5450":"1.16.2",
+  "latitude 5455":"2.11.0",
+  "latitude 5500":"1.41.1",
+  "latitude 5501":"1.42.1",
+  "latitude 5510":"1.38.1",
+  "latitude 5511":"1.39.1",
+  "latitude 5520":"1.46.0",
+  "latitude 5521":"1.39.0",
+  "latitude 5530":"1.32.1",
+  "latitude 5531":"1.32.1",
+  "latitude 5540":"1.24.1",
+  "latitude 5550":"1.16.2",
+  "latitude 7030 rugged extreme":"1.17.3",
+  "latitude 7200 2-in-1":"1.38.0",
+  "latitude 7210 2-in-1":"1.40.0",
+  "latitude 7212 rugged extreme tablet":"1.58.0",
+  "latitude 7220 rugged extreme":"1.48.0",
+  "latitude 7230 rugged extreme":"1.26.4",
+  "latitude 7300":"1.42.1",
+  "latitude 7310":"1.41.1",
+  "latitude 7320":"1.46.0",
+  "latitude 7320 detachable":"1.43.0",
+  "latitude 7330":"1.34.1",
+  "latitude 7330 rugged laptop":"1.39.0",
+  "latitude 7340":"1.25.1",
+  "latitude 7350":"1.16.1",
+  "latitude 7350 detachable":"1.14.1",
+  "latitude 7400":"1.42.1",
+  "latitude 7400 2-in-1":"1.37.0",
+  "latitude 7410":"1.41.1",
+  "latitude 7420":"1.46.0",
+  "latitude 7424 rugged extreme":"1.40.0",
+  "latitude 7430":"1.34.1",
+  "latitude 7440":"1.25.1",
+  "latitude 7450":"1.16.0",
+  "latitude 7455":"2.11.0",
+  "latitude 7520":"1.46.0",
+  "latitude 7530":"1.34.1",
+  "latitude 7640":"1.25.1",
+  "latitude 7650":"1.16.0",
+  "latitude 9330":"1.31.0",
+  "latitude 9410":"1.39.1",
+  "latitude 9420":"1.42.0",
+  "latitude 9430":"1.34.1",
+  "latitude 9440 2-in-1":"1.23.1",
+  "latitude 9450":"1.15.0",
+  "latitude 9510 2-in-1":"1.38.0",
+  "latitude 9520":"1.43.0",
+  "latitude rugged 7220ex":"1.48.0",
+  "optiplex 3000 micro":"1.34.1",
+  "optiplex 3000 small form factor":"1.34.1",
+  "optiplex 3000 tower":"1.34.1",
+  "optiplex 3000 thin client":"1.29.2",
+  "optiplex 3070":"1.35.0",
+  "optiplex 3080":"2.33.0",
+  "optiplex 3090":"2.27.0",
+  "optiplex 3090 ultra":"1.38.0",
+  "optiplex 3280 all-in-one":"1.41.0",
+  "optiplex 5000 micro":"1.33.0",
+  "optiplex 5000 small form factor":"1.33.0",
+  "optiplex 5000 tower":"1.33.0",
+  "optiplex 5070":"1.35.0",
+  "optiplex 5080":"1.33.0",
+  "optiplex 5090 micro":"1.37.0",
+  "optiplex 5090 small form factor":"1.37.0",
+  "optiplex 5090 tower":"1.37.0",
+  "optiplex 5270 all-in-one":"1.40.0",
+  "optiplex 5400 all-in-one":"1.1.53",
+  "optiplex 5480 all-in-one":"1.42.0",
+  "optiplex 5490 all-in-one":"1.43.0",
+  "optiplex 7000 micro":"1.33.2",
+  "optiplex 7000 small form factor":"1.33.2",
+  "optiplex 7000 tower":"1.33.2",
+  "optiplex 7000 xe micro":"1.33.2",
+  "optiplex 7050":"1.27.0",
+  "optiplex 7070":"1.35.0",
+  "optiplex 7070 ultra":"1.33.0",
+  "optiplex 7071":"1.35.0",
+  "optiplex 7080":"1.36.0",
+  "optiplex 7090 tower":"1.37.0",
+  "optiplex 7090 ultra":"1.38.0",
+  "optiplex 7400 all-in-one":"1.1.53",
+  "optiplex 7470 all-in-one":"1.40.0",
+  "optiplex 7480 all-in-one":"1.42.0",
+  "optiplex 7490 all-in-one":"1.43.0",
+  "optiplex 7770 all-in-one":"1.40.0",
+  "optiplex 7780 all-in-one":"1.42.0",
+  "optiplex aio 7420":"1.20.0",
+  "optiplex all-in-one 7410":"1.30.0",
+  "optiplex micro 7010":"1.30.0",
+  "optiplex micro plus 7010":"1.30.0",
+  "optiplex micro 7020":"1.20.0",
+  "optiplex sff 7020":"1.20.0",
+  "optiplex small form factor 7010":"1.30.0",
+  "optiplex small form factor plus 7010":"1.30.0",
+  "optiplex tower 7010":"1.30.0",
+  "optiplex tower plus 7010":"1.30.0",
+  "optiplex tower 7020":"1.20.0",
+  "optiplex xe3":"1.38.0",
+  "optiplex xe4 sff":"1.33.2",
+  "optiplex xe4 tower":"1.33.2",
+  "precision 3240 compact":"1.38.0",
+  "precision 3260 xe compact":"3.18.3",
+  "precision 3260 compact":"3.18.3",
+  "precision 3280 cff":"1.16.2",
+  "precision 3430 tower":"1.37.0",
+  "precision 3431 tower":"1.36.0",
+  "precision 3440":"1.36.0",
+  "precision 3450":"1.37.0",
+  "precision 3460 xe small form factor":"3.18.3",
+  "precision 3460 small form factor":"3.18.3",
+  "precision 3470":"1.33.1",
+  "precision 3480":"1.25.1",
+  "precision 3490":"1.16.2",
+  "precision 3540":"1.41.1",
+  "precision 3541":"1.42.1",
+  "precision 3550":"1.38.1",
+  "precision 3551":"1.39.1",
+  "precision 3560":"1.46.0",
+  "precision 3561":"1.39.0",
+  "precision 3570":"1.32.1",
+  "precision 3571":"1.32.1",
+  "precision 3580":"1.24.1",
+  "precision 3581":"1.24.1",
+  "precision 3590":"1.16.2",
+  "precision 3591":"1.16.2",
+  "precision 3630 tower":"2.37.0",
+  "precision 3640":"1.41.0",
+  "precision 3650 tower":"1.44.0",
+  "precision 3660":"2.30.1",
+  "precision 3680 tower":"1.18.2",
+  "precision 3930 rack":"2.40.0",
+  "precision 5470":"1.34.0",
+  "precision 5480":"1.22.1",
+  "precision 5490":"1.14.2",
+  "precision 5540":"1.39.0",
+  "precision 5550":"1.39.0",
+  "precision 5560":"1.41.0",
+  "precision 5570":"1.35.0",
+  "precision 5680":"1.23.1",
+  "precision 5690":"1.15.1",
+  "precision 5750":"1.37.0",
+  "precision 5760":"1.37.0",
+  "precision 5770":"1.35.0",
+  "precision 5820 tower":"2.46.0",
+  "precision 5860 tower":"3.1.1",
+  "precision 7540":"1.43.1",
+  "precision 7550":"1.41.1",
+  "precision 7560":"1.42.0",
+  "precision 7670":"1.32.0",
+  "precision 7680":"1.23.6",
+  "precision 7740":"1.43.1",
+  "precision 7750":"1.41.1",
+  "precision 7760":"1.42.0",
+  "precision 7770":"1.32.0",
+  "precision 7780":"1.23.6",
+  "precision 7820 tower":"2.50.0",
+  "precision 7865 tower":"1.21.1",
+  "precision 7875 tower":"2.2.1",
+  "precision 7920 tower":"2.50.0",
+  "precision 7920 rack":"2.25.1",
+  "precision 7920 xl rack":"2.25.1",
+  "precision 7960 tower":"2.13.1",
+  "precision 7960 rack":"2.8.3",
+  "precision 7960 xl rack":"2.8.3",
+  "vostro 3020 small desktop":"1.29.1",
+  "vostro 3020 tower desktop":"1.29.1",
+  "vostro 3030":"1.19.1",
+  "vostro 3030s":"1.19.1",
+  "vostro 3400":"1.41.0",
+  "vostro 3401":"1.41.0",
+  "vostro 3405":"1.35.1",
+  "vostro 3500":"1.41.0",
+  "vostro 3501":"1.41.0",
+  "vostro 3690":"1.37.0",
+  "vostro 3710":"1.34.1",
+  "vostro 3890":"1.37.0",
+  "vostro 3910":"1.34.1",
+  "vostro 14 3420":"1.35.0",
+  "vostro 14 3425":"1.31.1",
+  "vostro 14 3430":"1.23.2",
+  "vostro 14 3435":"1.24.1",
+  "vostro 14 3440":"1.15.1",
+  "vostro 14 5410":"2.37.0",
+  "vostro 15 3510":"1.40.0",
+  "vostro 15 3515":"1.36.1",
+  "vostro 15 3520":"1.35.0",
+  "vostro 15 3525":"1.31.1",
+  "vostro 15 3530":"1.23.2",
+  "vostro 15 3535":"1.24.1",
+  "vostro 15 5510":"2.37.0",
+  "vostro 16 5630":"1.24.1",
+  "vostro 16 5635":"1.18.0",
+  "vostro 16 5640":"1.15.1",
+  "vostro 5320":"1.28.0",
+  "vostro 5415":"1.30.0",
+  "vostro 5515":"1.30.0",
+  "vostro 5620":"1.31.0",
+  "vostro 5625":"1.24.0",
+  "vostro 7620":"1.32.0",
+  "wyse 5070":"1.38.0",
+  "wyse 5470":"1.32.0",
+  "wyse 5470 all-in-one":"1.33.0",
+  "xps 13 9305":"1.33.0",
+  "xps 13 9310":"3.34.0",
+  "xps 13 9315":"1.32.0",
+  "xps 13 9340":"1.19.0",
+  "xps 13 9345":"2.0.9",
+  "xps 13 9350":"1.14.0",
+  "xps 13 plus 9320":"2.24.1",
+  "xps 14 9440":"1.17.0",
+  "xps 15 9500":"1.39.0",
+  "xps 15 9510":"1.41.0",
+  "xps 15 9520":"1.35.0",
+  "xps 15 9530":"1.25.1",
+  "xps 16 9640":"1.17.0",
+  "xps 17 9710":"1.37.0",
+  "xps 17 9720":"1.35.0",
+  "xps 17 9730":"1.22.1",
+  "xps 8950":"1.29.0",
+  "xps 8960":"2.20.1",
+  "xps 9315 2-in-1":"1.25.0",
+  "xps 9320":"2.24.1"
+};
+
+/* HP_BIOS_TABLE */
+const HP_BIOS_TABLE={
+  "hp collaboration g6 24 aio with zoom rooms":"02.24.00",
+  "hp collaboration g6 27 aio with zoom rooms":"02.24.00",
+  "hp collaboration g6 pc with zoom rooms":"02.24.00",
+  "hp dragonfly 13.5 g4":"01.10.00",
+  "hp dragonfly folio 13.5 g3":"01.16.00",
+  "hp elite dragonfly":"01.34.00",
+  "hp elite dragonfly 13.5 g3":"01.16.00",
+  "hp elite dragonfly g2":"01.22.00",
+  "hp elite dragonfly max":"01.22.00",
+  "hp elite mini 600 g9":"02.19.01",
+  "hp elite mini 800 g9":"02.19.01",
+  "hp elite mt645 g7":"01.22.00",
+  "hp elite sff 600 g9":"02.19.01",
+  "hp elite sff 800 g9":"02.19.01",
+  "hp elite slice":"02.67",
+  "hp elite slice for meetings rooms g2 for intel unite":"02.67",
+  "hp elite slice g2 - audio ready with zoom rooms":"02.67",
+  "hp elite slice g2 - partner ready with microsoft teams rooms":"02.67",
+  "hp elite slice g2 with microsoft teams rooms":"02.67",
+  "hp elite slice g2 with zoom rooms":"02.67",
+  "hp elite slice g2 with zoom rooms audio ready":"02.67",
+  "hp elite t655":"01.14",
+  "hp elite t755":"01.08",
+  "hp elite tower 600 g9":"02.19.01",
+  "hp elite tower 680 g9":"02.19.01",
+  "hp elite tower 800 g9":"02.19.01",
+  "hp elite tower 880 g9":"02.19.01",
+  "hp elite x2 1012 g1":"01.60",
+  "hp elite x2 g4":"01.33.00",
+  "hp elite x2 g4 tablet":"01.33.00",
+  "hp elite x2 g8":"01.22.01",
+  "hp elite x360 1040 14 g10":"01.10.00",
+  "hp elite x360 1040 14 g9":"01.16.01",
+  "hp elite x360 830 13 g10":"01.10.00",
+  "hp elite x360 830 13 g9":"01.16.01",
+  "hp elitebook 1040 14 g10":"01.10.00",
+  "hp elitebook 1040 14 g9":"01.16.01",
+  "hp elitebook 630 13 g9":"01.16.00",
+  "hp elitebook 630 13.3 g10":"01.10.00",
+  "hp elitebook 640 14 g10":"01.10.00",
+  "hp elitebook 640 14 g9":"01.16.00",
+  "hp elitebook 645 14 g10":"01.11.01",
+  "hp elitebook 645 14 g9":"01.20.00",
+  "hp elitebook 650 15.6 g10":"01.10.00",
+  "hp elitebook 650 15.6 g9":"01.16.00",
+  "hp elitebook 655 14 g9":"01.20.00",
+  "hp elitebook 655 15.6 g10":"01.11.01",
+  "hp elitebook 735 g6":"01.32.00",
+  "hp elitebook 745 g6":"01.32.00",
+  "hp elitebook 8 flip g1i 13 inch notebook ai pc":"01.04.02",
+  "hp elitebook 830 13 g10":"01.10.00",
+  "hp elitebook 830 13 g9":"01.16.01",
+  "hp elitebook 830 g6":"01.33.00",
+  "hp elitebook 830 g7":"01.22.00",
+  "hp elitebook 830 g8":"01.22.00",
+  "hp elitebook 835 13 g10":"01.10.03",
+  "hp elitebook 835 13 g9":"01.14.00",
+  "hp elitebook 835 g7":"01.22.00",
+  "hp elitebook 835 g8":"01.22.00",
+  "hp elitebook 840 14 g10":"01.10.00",
+  "hp elitebook 840 14 g9":"01.16.01",
+  "hp elitebook 840 aero g8":"01.22.00",
+  "hp elitebook 840 g6":"01.33.00",
+  "hp elitebook 840 g6 healthcare edition":"01.33.00",
+  "hp elitebook 840 g7":"01.22.00",
+  "hp elitebook 840 g8":"01.22.00",
+  "hp elitebook 845 14 g10":"01.10.03",
+  "hp elitebook 845 14 g9":"01.14.00",
+  "hp elitebook 845 g7":"01.22.00",
+  "hp elitebook 845 g8":"01.22.00",
+  "hp elitebook 846 g6":"01.33.00",
+  "hp elitebook 846 g6 healthcare edition":"01.33.00",
+  "hp elitebook 850 g6":"01.33.00",
+  "hp elitebook 850 g7":"01.22.00",
+  "hp elitebook 850 g8":"01.22.00",
+  "hp elitebook 855 16 g9":"01.14.00",
+  "hp elitebook 855 g7":"01.22.00",
+  "hp elitebook 855 g8":"01.22.00",
+  "hp elitebook 860 16 g10":"01.10.00",
+  "hp elitebook 860 16 g9":"01.16.01",
+  "hp elitebook 865 14 g10":"01.10.03",
+  "hp elitebook x360 1030 g4":"01.33.00",
+  "hp elitebook x360 1030 g7":"01.22.00",
+  "hp elitebook x360 1030 g8":"01.22.00",
+  "hp elitebook x360 1040 g6":"01.33.00",
+  "hp elitebook x360 1040 g7":"01.22.00",
+  "hp elitebook x360 1040 g8":"01.22.00",
+  "hp elitebook x360 830 g6":"01.33.00",
+  "hp elitebook x360 830 g7":"01.22.00",
+  "hp elitebook x360 830 g8":"01.22.00",
+  "hp elitebook x flip g1i 14 inch notebook next gen ai pc":"01.04.01",
+  "hp elitedesk 705 g4 mt":"02.27.00",
+  "hp elitedesk 705 g4 mt workstation edition":"02.27.00",
+  "hp elitedesk 705 g5 dm":"02.24.00",
+  "hp elitedesk 705 g5 sff":"02.24.00",
+  "hp elitedesk 800 35w g4 dm":"02.32.00",
+  "hp elitedesk 800 65w g4 dm":"02.32.00",
+  "hp elitedesk 800 95w g4 dm":"02.32.00",
+  "hp elitedesk 800 g5 dm":"02.24.00",
+  "hp elitedesk 800 g5 sff":"02.24.00",
+  "hp elitedesk 800 g5 tower":"02.24.00",
+  "hp elitedesk 800 g6 mini":"02.24.00",
+  "hp elitedesk 800 g6 sff":"02.24.00",
+  "hp elitedesk 800 g6 tower":"02.24.00",
+  "hp elitedesk 800 g8 dm":"02.20.00",
+  "hp elitedesk 800 g8 sff":"02.20.00",
+  "hp elitedesk 800 g8 tower":"02.20.00",
+  "hp elitedesk 805 g6 mini":"02.20.00",
+  "hp elitedesk 805 g6 sff":"02.20.00",
+  "hp elitedesk 805 g8 dm":"02.18.00",
+  "hp elitedesk 805 g8 sff":"02.18.00",
+  "hp elitedesk 880 g8 tower":"02.20.00",
+  "hp eliteone 1000 g2 aio":"02.32.00",
+  "hp eliteone 800 g5 23.8 aio":"02.24.00",
+  "hp eliteone 800 g5 23.8 hc aio":"02.24.00",
+  "hp eliteone 800 g6 24 aio":"02.24.00",
+  "hp eliteone 800 g6 27 aio":"02.24.00",
+  "hp eliteone 800 g8 24 aio":"02.20.00",
+  "hp eliteone 800 g8 27 aio":"02.20.00",
+  "hp eliteone 840 23.8 g9":"02.20.00",
+  "hp eliteone 870 27 g9":"02.20.00",
+  "hp engage flex mini retail system":"02.24.00",
+  "hp engage flex pro g2 retail system":"02.09.02",
+  "hp engage flex pro retail system":"02.32.00",
+  "hp engage flex pro-c g2 retail system":"02.09.02",
+  "hp engage flex pro-c retail system":"02.32.00",
+  "hp engage go 10 mobile system":"01.22.00",
+  "hp engage go 13.5 mobile system":"01.22.00",
+  "hp engage go mobile system":"01.33.00",
+  "hp engage one aio system":"02.55",
+  "hp engage one pro dm system":"02.24.00",
+  "hp mini conferencing pc":"02.19.01",
+  "hp mini g2 conferencing pc":"02.19.01",
+  "hp mini ip conferencing pc":"02.19.01",
+  "hp mp9 g4 retail system":"02.32.00",
+  "hp mt21":"01.35.01",
+  "hp mt22":"01.28.01",
+  "hp mt31":"01.35.01",
+  "hp mt32":"01.24.01",
+  "hp mt45":"01.34.01",
+  "hp mt46":"01.24.01",
+  "hp presence 24 with zoom rooms":"02.20.00",
+  "hp presence 27 with zoom rooms":"02.20.00",
+  "hp presence control kit with microsoft teams rooms":"02.24.00",
+  "hp presence control kit with zoom rooms":"02.24.00",
+  "hp presence control plus kit with mtr":"02.24.00",
+  "hp presence control plus kit with zr":"02.24.00",
+  "hp presence no audio control kit with mtr":"02.24.00",
+  "hp presence no audio control kit with zr":"02.24.00",
+  "hp pro mini 400 g9":"02.20.00",
+  "hp pro mt440 g3":"01.18.00",
+  "hp pro sff 400 g9":"02.19.01",
+  "hp pro t550":"01.12",
+  "hp pro tower 400 g9 pci":"02.19.01",
+  "hp pro tower 480 g9 pci":"02.19.01",
+  "hp pro x360 435 13.3 g10":"01.11.01",
+  "hp pro x360 435 g9":"01.20.00",
+  "hp pro x360 fortis g10":"01.15.01",
+  "hp pro x360 fortis g11":"01.12.00",
+  "hp pro x360 fortis g9":"01.15.00",
+  "hp probook 470 g3":"01.62",
+  "hp probook 430 g6":"01.33.00",
+  "hp probook 430 g7":"01.26.00",
+  "hp probook 430 g8":"01.22.00",
+  "hp probook 430 g9":"01.16.00",
+  "hp probook 440 14 g10":"01.10.00",
+  "hp probook 440 g6":"01.33.00",
+  "hp probook 440 g7":"01.26.00",
+  "hp probook 440 g8":"01.22.00",
+  "hp probook 440 g9":"01.16.00",
+  "hp probook 445 14 g10":"01.11.01",
+  "hp probook 445 14 g9":"01.20.00",
+  "hp probook 445 g7":"01.22.00",
+  "hp probook 445 g8":"01.22.00",
+  "hp probook 445r g6":"01.34.00",
+  "hp probook 450 15.6 g10":"01.10.00",
+  "hp probook 450 g6":"01.33.00",
+  "hp probook 450 g7":"01.26.00",
+  "hp probook 450 g8":"01.22.00",
+  "hp probook 450 g9":"01.16.00",
+  "hp probook 455 14 g9":"01.20.00",
+  "hp probook 455 15.6 g10":"01.11.01",
+  "hp probook 455 g7":"01.22.00",
+  "hp probook 455 g8":"01.22.00",
+  "hp probook 455r g6":"01.34.00",
+  "hp probook 630 g8":"01.22.00",
+  "hp probook 635 aero g7":"01.22.00",
+  "hp probook 635 aero g8":"01.22.00",
+  "hp probook 640 g5":"01.33.00",
+  "hp probook 640 g7":"01.22.00",
+  "hp probook 640 g8":"01.22.00",
+  "hp probook 650 g5":"01.33.00",
+  "hp probook 650 g7":"01.22.00",
+  "hp probook 650 g8":"01.22.00",
+  "hp probook fortis g10":"01.15.01",
+  "hp probook fortis g9":"01.15.00",
+  "hp probook x360 11 g5 ee":"01.22.00",
+  "hp probook x360 11 g6 ee":"01.23.00",
+  "hp probook x360 11 g7 ee":"01.22.00",
+  "hp probook x360 435 g7":"01.22.00",
+  "hp probook x360 435 g8":"01.22.00",
+  "hp prodesk 400 g4 dm":"02.31.00",
+  "hp prodesk 400 g5 dm":"02.24.00",
+  "hp prodesk 400 g6 dm":"02.24.00",
+  "hp prodesk 400 g6 mt":"02.24.00",
+  "hp prodesk 400 g6 sff":"02.24.00",
+  "hp prodesk 400 g7 microtower":"02.24.00",
+  "hp prodesk 400 g7 pci microtower":"02.24.00",
+  "hp prodesk 400 g7 sff":"02.24.00",
+  "hp prodesk 405 g4 dm":"02.26.00",
+  "hp prodesk 405 g6 dm":"02.21.00",
+  "hp prodesk 405 g8 dm":"02.18.00",
+  "hp prodesk 405 g8 sff":"02.18.00",
+  "hp prodesk 480 g6 mt":"02.24.00",
+  "hp prodesk 600 g4 mt":"02.30.00",
+  "hp prodesk 600 g4 dm":"02.32.00",
+  "hp prodesk 600 g5 dm":"02.24.00",
+  "hp prodesk 600 g5 mt":"02.24.00",
+  "hp prodesk 600 g5 pci mt":"02.24.00",
+  "hp prodesk 600 g5 sff":"02.24.00",
+  "hp prodesk 600 g6 microtower":"02.24.00",
+  "hp prodesk 600 g6 mini":"02.24.00",
+  "hp prodesk 600 g6 pci microtower":"02.24.00",
+  "hp prodesk 600 g6 sff":"02.24.00",
+  "hp prodesk 680 g6 pci microtower":"02.24.00",
+  "hp proone 400 g5 aio":"02.24.00",
+  "hp proone 400 g6 20 aio":"02.24.00",
+  "hp proone 400 g6 24 aio":"02.24.00",
+  "hp proone 440 23.8 g9":"02.19.01",
+  "hp proone 440 g5 aio":"02.24.00",
+  "hp proone 440 g6 24 aio":"02.24.00",
+  "hp proone 600 g5 aio":"02.24.00",
+  "hp proone 600 g6 22 aio":"02.24.00",
+  "hp t430":"02.19",
+  "hp t530":"01.19",
+  "hp t628":"01.13",
+  "hp t630":"01.18",
+  "hp t638":"01.20",
+  "hp t640":"01.23",
+  "hp t740":"01.22",
+  "hp tz655 trusted zero client":"01.14",
+  "hp z1 entry tower g5":"02.24.00",
+  "hp z1 entry tower g6":"02.24.00",
+  "hp z1 g8 tower desktop pc":"02.20.00",
+  "hp z1 g9 tower":"02.19.01",
+  "hp z2 g8 sff workstation desktop pc":"01.06.12",
+  "hp z2 g8 tower workstation desktop pc":"01.06.12",
+  "hp z2 mini g4 entry workstation":"01.08.13",
+  "hp z2 mini g4 performance workstation":"01.08.13",
+  "hp z2 mini g5 workstation":"01.04.20",
+  "hp z2 mini workstation g9":"03.05.02",
+  "hp z2 sff g4 workstation":"01.08.13",
+  "hp z2 sff g5 workstation":"01.04.20",
+  "hp z2 sff workstation g9":"03.05.02",
+  "hp z2 tower g4 workstation":"01.08.13",
+  "hp z2 tower g5 workstation":"01.04.20",
+  "hp z2 tower workstation g9":"03.05.02",
+  "hp z4 rack g5 workstation":"01.02.27",
+  "hp z4 g4 workstation":"02.97",
+  "hp z4 workstation g5":"01.02.30",
+  "hp z6 workstation g5":"01.02.30",
+  "hp z6 workstation g5 a":"01.02.05",
+  "hp z8 fury workstation g5":"01.02.30",
+  "hp z8 workstation g5":"01.02.29",
+  "hp zbook 14u g6":"01.33.00",
+  "hp zbook 15 g6":"01.33.00",
+  "hp zbook 17 g6":"01.33.00",
+  "hp zbook create g7":"01.22.00",
+  "hp zbook firefly 14 g10":"01.10.00",
+  "hp zbook firefly 14 g10 a":"01.10.03",
+  "hp zbook firefly 14 g7":"01.22.00",
+  "hp zbook firefly 14 g8":"01.22.00",
+  "hp zbook firefly 14 g9":"01.16.01",
+  "hp zbook firefly 15 g7":"01.22.00",
+  "hp zbook firefly 15.6 g8":"01.22.00",
+  "hp zbook firefly 16 g10":"01.10.00",
+  "hp zbook firefly 16 g9":"01.16.01",
+  "hp zbook fury 15 g7":"01.22.00",
+  "hp zbook fury 15.6 g8":"01.22.00",
+  "hp zbook fury 16 g10":"01.10.00",
+  "hp zbook fury 17 g7":"01.22.00",
+  "hp zbook fury 17.3 g8":"01.22.00",
+  "hp zbook fury g9":"01.16.00",
+  "hp zbook power 15.6 g10":"01.10.00",
+  "hp zbook power 15.6 g10 a":"01.10.00",
+  "hp zbook power 15.6 g8":"01.22.00",
+  "hp zbook power 15.6 g9":"01.16.00",
+  "hp zbook power g7":"01.22.00",
+  "hp zbook studio 15.6 g8":"01.22.00",
+  "hp zbook studio 16 g10":"01.10.00",
+  "hp zbook studio 16 g9":"01.16.00",
+  "hp zbook studio g5":"01.33.00",
+  "hp zbook studio g7":"01.22.00",
+  "hp zbook studio x360 g5":"01.33.00",
+  "hp zhan 66 pro 14 g4":"01.22.00",
+  "hp zhan 66 pro 14 g5":"01.16.00",
+  "hp zhan 66 pro a 14 g3":"01.22.00",
+  "hp zhan 66 pro a 14 g4":"01.22.00",
+  "hp zhan 66 pro a 14 g5":"01.20.00",
+  "hp zhan 66 pro g2 aio":"02.24.00",
+  "hp zhan 66 pro g3 22 aio":"02.24.00",
+  "hp zhan 66 pro g3 24 aio":"02.24.00",
+  "hp elitepad 1000 g2":"01.48",
+  "hp zhan 99 pro 23.8 g9":"02.19.01",
+  "hp 470 17 inch g9 notebook pc":"End of Life"
+};
+
+/* ─── BIOS version helpers ──────────────────────────────────────────────── */
+/* Sources: HP ISH_13070353 (April 2026); Dell KB 000347876 (April 2026)   */
+function extractBiosVer(s){
+  if(!s) return null;
+  const m=String(s).match(/(\d+(?:\.\d+)+)/);
+  return m?m[1]:null;
+}
+function compareBiosVer(cur,min){
+  const cv=extractBiosVer(cur),mv=extractBiosVer(min);
+  if(cv===null||mv===null) return null;
+  const cp=cv.split('.').map(Number),mp=mv.split('.').map(Number);
+  const len=Math.max(cp.length,mp.length);
+  for(let i=0;i<len;i++){const c=cp[i]||0,m=mp[i]||0;if(c>m)return 1;if(c<m)return -1;}
+  return 0;
+}
+
+/* ─── BIOS model matching — normalize → token-subset → Jaccard ─────────── */
+function normalizeModel(m){
+  return(m||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+}
+function tokenSet(s){ return new Set(s.split(' ').filter(Boolean)); }
+function jaccard(a,b){
+  const sa=tokenSet(a),sb=tokenSet(b);
+  if(!sa.size||!sb.size) return 0;
+  let inter=0;
+  for(const w of sa) if(sb.has(w)) inter++;
+  return inter/(sa.size+sb.size-inter);
+}
+// Critical token guard — numeric strings and G-generation tokens in the TABLE KEY
+// must ALL appear in the device token set. Prevents G3 from matching G5, 5420 from
+// matching 5440, etc., regardless of overall similarity score.
+function criticalTokensOk(keyToks,devToks){
+  for(const t of keyToks){
+    if(/^\d+$/.test(t)||/^g\d+$/i.test(t)){
+      if(!devToks.has(t)) return false;
+    }
+  }
+  return true;
+}
+function lookupBiosTable(tbl,model){
+  const nm=normalizeModel(model);
+  const devToks=tokenSet(nm);
+
+  // Stage 1: exact normalized match
+  for(const[k,v] of Object.entries(tbl)){
+    if(normalizeModel(k)===nm) return{minVer:v,matchedModel:k,stage:'exact'};
+  }
+
+  // Stage 2: key token set is a subset of device tokens
+  // Handles verbose marketing names ("14 Inch G10 2-in-1 Notebook PC") where the
+  // device string has extra words but all table-key words are present.
+  // Critical guard prevents G3 table key matching a G5 device.
+  let subMatch=null,subKey=null,subLen=0;
+  for(const[k,v] of Object.entries(tbl)){
+    const keyToks=tokenSet(normalizeModel(k));
+    let allIn=true;
+    for(const t of keyToks){ if(!devToks.has(t)){allIn=false;break;} }
+    if(allIn&&criticalTokensOk(keyToks,devToks)){
+      if(k.length>subLen){subLen=k.length;subMatch=v;subKey=k;}
+    }
+  }
+  if(subMatch) return{minVer:subMatch,matchedModel:subKey,stage:'subset'};
+
+  // Stage 3: Jaccard word-token similarity >= 60% WITH critical guard
+  // Guard runs first so mismatched generations never reach scoring.
+  let bestScore=0,bestMin=null,bestKey=null;
+  for(const[k,v] of Object.entries(tbl)){
+    const keyToks=tokenSet(normalizeModel(k));
+    if(!criticalTokensOk(keyToks,devToks)) continue;
+    const score=jaccard(nm,normalizeModel(k));
+    if(score>bestScore){bestScore=score;bestMin=v;bestKey=k;}
+  }
+  if(bestScore>=0.60) return{minVer:bestMin,matchedModel:bestKey,stage:'fuzzy('+Math.round(bestScore*100)+'%)'};
+
+  return{minVer:null,matchedModel:null,stage:null};
+}
+function biosCompliance(mfg,model,biosVer){
+  const N={BiosReadyStatus:'NotApplicable',BiosUpdateRequired:null,MinBiosVersion:null,BiosListSource:null,MatchedModel:null,MatchStage:null};
+  if(!mfg||!model) return N;
+  const ml=String(mfg).toLowerCase();
+  const isHp=/hp|hewlett.packard/.test(ml),isDell=/dell/.test(ml);
+  if(!isHp&&!isDell) return N;
+  const src=isHp?'HP':'Dell',tbl=isHp?HP_BIOS_TABLE:DELL_BIOS_TABLE;
+  const{minVer,matchedModel,stage}=lookupBiosTable(tbl,model);
+  if(!minVer) return{...N,BiosReadyStatus:'NotInList',BiosListSource:src};
+  if(minVer==='End of Life') return{BiosReadyStatus:'EndOfLife',BiosUpdateRequired:true,MinBiosVersion:minVer,BiosListSource:src,MatchedModel:matchedModel,MatchStage:stage};
+  const cmp=compareBiosVer(biosVer,minVer);
+  if(cmp===null) return{BiosReadyStatus:'Unknown',BiosUpdateRequired:null,MinBiosVersion:minVer,BiosListSource:src,MatchedModel:matchedModel,MatchStage:stage};
+  return{BiosReadyStatus:cmp>=0?'OK':'Required',BiosUpdateRequired:cmp<0,MinBiosVersion:minVer,BiosListSource:src,MatchedModel:matchedModel,MatchStage:stage};
+}
+
+function sBadge(s){
+  if(!s) return 'bd';
+  if(s==='COMPLETE'||s==='COMPLETE_REG') return 'bg';
+  if(s.startsWith('BLOCKED')||s==='LOG_ACCESS_ERR'||s.startsWith('ERROR')) return 'br';
+  if(s==='NOT_STARTED'||s==='PARTIAL_REG') return 'bi';
+  if(s.startsWith('PENDING')||s==='IN_PROGRESS') return 'bw pulse';
+  return 'bd';
+}
+
+function sGroup(s){
+  if(!s) return 'Unknown';
+  if(s==='COMPLETE'||s==='COMPLETE_REG') return 'Compliant';
+  if(s.startsWith('BLOCKED')||s.startsWith('ERROR')||s==='LOG_ACCESS_ERR') return 'ActionRequired';
+  if(s.startsWith('PENDING')||s==='IN_PROGRESS'||s==='NOT_STARTED'||s==='PARTIAL_REG') return 'InProgress';
+  return 'Unknown';
+}
+
+function cGroup(lv){
+  if(!lv) return null;
+  if(/high confidence/i.test(lv))    return 'HighConfidence';
+  if(/temporarily paused/i.test(lv)) return 'TemporarilyPaused';
+  if(/not supported/i.test(lv))      return 'NotSupported';
+  if(/under observation/i.test(lv))  return 'UnderObservation';
+  if(/no data observed/i.test(lv))   return 'NoData';
+  return 'Other';
+}
+
+/* ─── Utilities ─────────────────────────────────────────────────────── */
+const esc=v=>v==null?'':String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtShort=iso=>{if(!iso)return'—';try{return new Date(iso).toISOString().slice(0,10)}catch{return iso}};
+const fmtFull=iso=>{if(!iso)return null;try{return new Date(iso).toISOString().slice(0,16).replace('T',' ')+' UTC'}catch{return iso}};
+const dash=v=>v==null||v===''?'<span style="color:var(--dim)">—</span>':esc(String(v));
+
+function boolBadge(v,tLbl,fLbl,invert){
+  if(v===true)  return `<span class="badge ${invert?'br':'bg'}">${esc(tLbl)}</span>`;
+  if(v===false) return `<span class="badge ${invert?'bg':'br'}">${esc(fLbl)}</span>`;
+  return '<span style="color:var(--dim)">—</span>';
+}
+
+function isStale(iso){
+  if(!iso) return true;
+  try{const c=new Date();c.setDate(c.getDate()-7);return new Date(iso)<c;}catch{return true}
+}
+
+/* ─── State ─────────────────────────────────────────────────────────── */
+let devs=[],meta={},sortCol='ComputerName',sortDir='asc';
+let cardFil='',cgFil='',expanded=new Set();
+
+/* ─── Normalise ─────────────────────────────────────────────────────── */
+function norm(r){
+  const stale=r.Stale!==undefined?!!r.Stale:isStale(r.CollectedAt);
+  // BIOS compliance computed live from the tables — never read from JSON
+  const bc=biosCompliance(r.SystemManufacturer,r.SystemModel,r.BIOSVersionParsed||r.BIOSVersion);
+  return{
+    ComputerName:r.ComputerName||'Unknown',CollectedAt:r.CollectedAt||null,Stale:stale,
+    Status:r.Status||'UNKNOWN',StatusGroup:r.StatusGroup||sGroup(r.Status),StatusDetail:r.StatusDetail||'',
+    RegStatus:r.RegStatus||null,RegError:typeof r.RegError==='number'?r.RegError:(r.RegError!=null&&typeof r.RegError!=='object'&&Number.isFinite(+r.RegError)?+r.RegError:null),
+    RegErrorEvent:r.RegErrorEvent||null,RegCapable:typeof r.RegCapable==='number'?r.RegCapable:(r.RegCapable!=null&&typeof r.RegCapable!=='object'?+r.RegCapable:null),
+    RegDerivedStatus:typeof r.RegDerivedStatus==='string'?r.RegDerivedStatus:null,
+    ConfidenceLevel:r.ConfidenceLevel||null,ConfidenceLevelSource:r.ConfidenceLevelSource||null,
+    ConfidenceGroup:r.ConfidenceGroup||cGroup(r.ConfidenceLevel),
+    BucketHash:r.BucketHash||null,DeviceAttributes:r.DeviceAttributes||null,
+    UpdateType:r.UpdateType||null,SkipReason:r.SkipReason||null,
+    // OS (v3.0)
+    OSCaption:r.OSCaption||null,OSBuildNumber:r.OSBuildNumber||null,
+    // Hardware (v3.0)
+    SystemManufacturer:r.SystemManufacturer||null,SystemModel:r.SystemModel||null,
+    // BIOS (v3.0)
+    BIOSManufacturer:r.BIOSManufacturer||null,BIOSVersion:r.BIOSVersion||null,
+    BIOSVersionParsed:r.BIOSVersionParsed||null,BIOSReleaseDate:r.BIOSReleaseDate||null,
+    // Platform (v3.0)
+    IsVirtualMachine:r.IsVirtualMachine===true,SecureBootStatus:r.SecureBootStatus||null,
+    // BIOS compliance — computed live from tables (not read from JSON)
+    BiosReadyStatus:bc.BiosReadyStatus,
+    BiosUpdateRequired:bc.BiosUpdateRequired,
+    MinBiosVersion:bc.MinBiosVersion,BiosListSource:bc.BiosListSource,
+    MatchedModel:bc.MatchedModel||null,MatchStage:bc.MatchStage||null,
+    // HP-specific legacy (v2.1 compat)
+    CspVendor:r.CspVendor||null,CspVersion:r.CspVersion||null,
+    IsHpDevice:!!r.IsHpDevice,
+    HpSbkpfv3Present:r.HpSbkpfv3Present!==undefined?r.HpSbkpfv3Present:null,
+    // Events
+    EventCount:r.EventCount!==undefined?r.EventCount:null,
+    LastEventId:r.LastEventId||null,LastEventTime:r.LastEventTime||null
+  };
+}
+
+/* ─── Load ──────────────────────────────────────────────────────────── */
+function readF(f){return new Promise((res,rej)=>{
+  const r=new FileReader();
+  r.onload=e=>res({name:f.name,text:e.target.result});
+  r.onerror=()=>rej(new Error(f.name));
+  r.readAsText(f);
+});}
+
+async function loadFiles(list){
+  const files=Array.from(list);
+  if(!files.length) return;
+  try{
+    const reads=await Promise.all(files.map(readF));
+    let nd=[],m={source:'',generatedAt:null,parseErrors:0};
+
+    if(reads.length===1){
+      const d=JSON.parse(reads[0].text);
+      if(Array.isArray(d.Devices)){
+        nd=d.Devices.map(norm);
+        m={source:reads[0].name,generatedAt:d._GeneratedAt||null,
+           parseErrors:d._ParseErrors||0,mode:'combined'};
+      } else {
+        nd=[norm(d)];m={source:reads[0].name,mode:'individual'};
+      }
+    } else {
+      reads.forEach(r=>{
+        try{
+          const d=JSON.parse(r.text);
+          if(Array.isArray(d.Devices)) d.Devices.forEach(x=>nd.push(norm(x)));
+          else nd.push(norm(d));
+        }catch{m.parseErrors=(m.parseErrors||0)+1;}
+      });
+      m.source=reads.length+' files';m.mode='individual';
+      if(m.parseErrors) m.source+=` (${m.parseErrors} parse error${m.parseErrors>1?'s':''})`;
+    }
+
+    devs=nd;meta=m;expanded.clear();cardFil='';cgFil='';
+    document.getElementById('screen-upload').hidden=true;
+    document.getElementById('screen-dashboard').hidden=false;
+    renderAll();
+  }catch(e){alert('JSON parse error: '+e.message);}
+}
+
+/* ─── Filter + sort ─────────────────────────────────────────────────── */
+function filtered(){
+  const sr=document.getElementById('f-search').value.toLowerCase();
+  const sf=document.getElementById('f-status').value;
+  const cf=document.getElementById('f-conf').value;
+  const biosReq=document.getElementById('f-bios-req').checked;
+  const st=document.getElementById('f-stale').checked;
+
+  let r=devs.filter(d=>{
+    if(sr&&!d.ComputerName.toLowerCase().includes(sr)) return false;
+    if(sf&&d.Status!==sf) return false;
+    if(cf&&(d.ConfidenceLevel||'')!==cf) return false;
+    if(biosReq&&d.BiosUpdateRequired!==true) return false;
+    if(st&&!d.Stale) return false;
+    if(cgFil&&d.ConfidenceGroup!==cgFil) return false;
+    if(cardFil==='Stale'&&!d.Stale) return false;
+    if(cardFil&&cardFil!=='Stale'&&d.StatusGroup!==cardFil) return false;
+    return true;
+  });
+
+  r.sort((a,b)=>{
+    let av=a[sortCol],bv=b[sortCol];
+    if(av==null)av='';if(bv==null)bv='';
+    const c=String(av).localeCompare(String(bv),undefined,{numeric:true});
+    return sortDir==='asc'?c:-c;
+  });
+  return r;
+}
+
+/* ─── Render ────────────────────────────────────────────────────────── */
+function renderAll(){renderSrc();renderCards();renderConf();renderBiosStatus();populateSels();renderTable();}
+
+function renderSrc(){
+  let t=meta.source;
+  if(meta.generatedAt) t+=' · Generated '+fmtShort(meta.generatedAt);
+  t+=' · '+devs.length+' device'+(devs.length!==1?'s':'');
+  if(meta.parseErrors) t+=' · ⚠ '+meta.parseErrors+' parse error'+(meta.parseErrors>1?'s':'');
+  document.getElementById('src-tag').textContent=t;
+}
+
+function renderCards(){
+  const n=devs.length,comp=devs.filter(d=>d.StatusGroup==='Compliant').length,
+    act=devs.filter(d=>d.StatusGroup==='ActionRequired').length,
+    prog=devs.filter(d=>d.StatusGroup==='InProgress').length,
+    unk=devs.filter(d=>d.StatusGroup==='Unknown').length,
+    stale=devs.filter(d=>d.Stale).length;
+
+  const data=[
+    {lbl:'Total Devices',num:n,      grp:'',              col:'var(--cyan)'},
+    {lbl:'Complete',     num:comp,   grp:'Compliant',     col:'var(--ok)'},
+    {lbl:'Action Req.',  num:act,    grp:'ActionRequired',col:'var(--err)'},
+    {lbl:'In Progress',  num:prog,   grp:'InProgress',    col:'var(--warn)'},
+    {lbl:'Unknown',      num:unk,    grp:'Unknown',       col:'var(--inf)'},
+    {lbl:'Stale (>7d)',  num:stale,  grp:'Stale',         col:'var(--ora)'},
+  ];
+
+  const el=document.getElementById('cards');
+  el.innerHTML=data.map(c=>`<div class="card${cardFil===c.grp?' on':''}" style="--ca:${c.col}" data-g="${c.grp}">
+    <div class="lbl">${c.lbl}</div><div class="num">${c.num}</div></div>`).join('');
+
+  el.querySelectorAll('.card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const g=card.dataset.g;cardFil=cardFil===g?'':g;
+      el.querySelectorAll('.card').forEach(c=>c.classList.toggle('on',c.dataset.g===cardFil));
+      renderTable();
+    });
+  });
+}
+
+function renderConf(){
+  const GRPS=['HighConfidence','TemporarilyPaused','UnderObservation','NotSupported','NoData','Other'];
+  const counts={};
+  devs.forEach(d=>{if(d.ConfidenceGroup) counts[d.ConfidenceGroup]=(counts[d.ConfidenceGroup]||0)+1;});
+  const withData=Object.values(counts).reduce((a,b)=>a+b,0);
+  const noData=devs.length-withData,tot=devs.length||1;
+
+  let html='';
+  if(!withData){
+    html='<p style="color:var(--muted);font-size:12px;line-height:1.6">No ConfidenceLevel data found.<br>Requires Windows update from Nov 2025 or later.</p>';
+  } else {
+    GRPS.forEach(g=>{
+      const c=counts[g]||0;if(!c)return;
+      const pct=Math.round(c/tot*100);
+      html+=`<div class="crow${cgFil===g?' fil':''}" data-cg="${g}">
+        <span class="clbl">${CGLBL[g]}</span>
+        <div class="cbar-wrap"><div class="cbar" style="width:${pct}%;background:${CBARCOL[g]}"></div></div>
+        <span class="cnum">${c}</span></div>`;
+    });
+    if(noData) html+=`<div class="crow" style="opacity:.45;margin-top:4px">
+      <span class="clbl" style="font-style:italic">Not available</span>
+      <div class="cbar-wrap"><div class="cbar" style="width:${Math.round(noData/tot*100)}%;background:var(--dim)"></div></div>
+      <span class="cnum">${noData}</span></div>`;
+  }
+  document.getElementById('conf-panel').innerHTML=html;
+
+  document.querySelectorAll('.crow[data-cg]').forEach(row=>{
+    row.addEventListener('click',()=>{
+      const g=row.dataset.cg;cgFil=cgFil===g?'':g;
+      document.querySelectorAll('.crow[data-cg]').forEach(r=>r.classList.toggle('fil',r.dataset.cg===cgFil));
+      renderTable();
+    });
+  });
+}
+
+function renderBiosStatus(){
+  // Separate HP and Dell device pools; v2.1 compat: fall back to IsHpDevice when BiosListSource absent
+  const hp=devs.filter(d=>d.BiosListSource==='HP'||(d.IsHpDevice&&!d.BiosListSource));
+  const dell=devs.filter(d=>d.BiosListSource==='Dell');
+
+  if(!hp.length&&!dell.length){
+    document.getElementById('bios-panel').innerHTML='<p style="color:var(--muted);font-size:12px">No HP or Dell devices with BIOS compliance data in this dataset.</p>';
+    return;
+  }
+
+  let html='';
+
+  // HP section
+  if(hp.length){
+    const hok =hp.filter(d=>d.BiosReadyStatus==='OK').length;
+    const hreq=hp.filter(d=>d.BiosUpdateRequired===true).length;
+    const heol=hp.filter(d=>d.BiosReadyStatus==='EndOfLife').length;
+    html+=`<div class="hrow" style="margin-bottom:2px"><span class="hlbl" style="font-weight:600">HP</span><span class="hnum" style="color:var(--cyan)">${hp.length}</span></div>`
+        +`<div class="hrow"><span class="hlbl">&nbsp;BIOS OK <span style="color:var(--ok)">&#10003;</span></span><span class="hnum" style="color:var(--ok)">${hok}</span></div>`
+        +(hreq?`<div class="hrow"><span class="hlbl" style="color:var(--err)">&nbsp;Update required &#9888;</span><span class="hnum" style="color:var(--err)">${hreq}</span></div>`:'')
+        +(heol?`<div class="hrow"><span class="hlbl" style="color:var(--err)">&nbsp;End of Life &#9888;</span><span class="hnum" style="color:var(--err)">${heol}</span></div>`:'');
+  }
+
+  // Dell section
+  if(dell.length){
+    if(hp.length) html+='<div style="margin-top:8px"></div>';
+    const dok =dell.filter(d=>d.BiosReadyStatus==='OK').length;
+    const dreq=dell.filter(d=>d.BiosUpdateRequired===true).length;
+    const deol=dell.filter(d=>d.BiosReadyStatus==='EndOfLife').length;
+    html+=`<div class="hrow" style="margin-bottom:2px"><span class="hlbl" style="font-weight:600">Dell</span><span class="hnum" style="color:var(--cyan)">${dell.length}</span></div>`
+        +`<div class="hrow"><span class="hlbl">&nbsp;BIOS OK <span style="color:var(--ok)">&#10003;</span></span><span class="hnum" style="color:var(--ok)">${dok}</span></div>`
+        +(dreq?`<div class="hrow"><span class="hlbl" style="color:var(--err)">&nbsp;Update required &#9888;</span><span class="hnum" style="color:var(--err)">${dreq}</span></div>`:'')
+        +(deol?`<div class="hrow"><span class="hlbl" style="color:var(--err)">&nbsp;End of Life &#9888;</span><span class="hnum" style="color:var(--err)">${deol}</span></div>`:'');
+  }
+
+  // Not-in-list devices (dimmed)
+  const nil=devs.filter(d=>d.BiosReadyStatus==='NotInList').length;
+  if(nil) html+=`<div class="hrow" style="opacity:.5;margin-top:4px"><span class="hlbl">Not in list</span><span class="hnum" style="color:var(--dim)">${nil}</span></div>`;
+
+  // Action link — only shown when there are devices needing a BIOS update
+  const anyReq=devs.filter(d=>d.BiosUpdateRequired===true).length;
+  if(anyReq) html+=`<div style="margin-top:10px;font-size:11px"><span id="bios-req-link" style="color:var(--err);cursor:pointer">Show BIOS action needed &rsaquo;</span></div>`;
+
+  document.getElementById('bios-panel').innerHTML=html;
+  const lnk=document.getElementById('bios-req-link');
+  if(lnk) lnk.addEventListener('click',()=>{document.getElementById('f-bios-req').checked=true;renderTable();});
+}
+
+function populateSels(){
+  const ss=[...new Set(devs.map(d=>d.Status).filter(Boolean))].sort();
+  const cs=[...new Set(devs.map(d=>d.ConfidenceLevel).filter(Boolean))].sort();
+  const vs=document.getElementById('f-status').value;
+  const vc=document.getElementById('f-conf').value;
+  document.getElementById('f-status').innerHTML='<option value="">All statuses</option>'+
+    ss.map(s=>`<option value="${esc(s)}"${s===vs?' selected':''}>${esc(SL[s]||s)}</option>`).join('');
+  document.getElementById('f-conf').innerHTML='<option value="">All confidence levels</option>'+
+    cs.map(c=>`<option value="${esc(c)}"${c===vc?' selected':''}>${esc(c)}</option>`).join('');
+}
+
+function biosReadyBadge(d){
+  const s=d.BiosReadyStatus;
+  if(s==='OK')        return '<span class="badge bg">OK</span>';
+  if(s==='Required')  return '<span class="badge br">Update Required</span>';
+  if(s==='EndOfLife') return '<span class="badge br">End of Life</span>';
+  if(s==='NotInList') return '<span class="badge bd">Not in List</span>';
+  return '<span style="color:var(--dim);font-size:11px">N/A</span>';
+}
+
+function regColor(s){
+  return s==='Updated'?'var(--ok)':s==='InProgress'?'var(--warn)':'var(--muted)';
+}
+
+function renderTable(){
+  const f=filtered();
+  document.getElementById('fcount').textContent=`Showing ${f.length} of ${devs.length} device${devs.length!==1?'s':''}`;
+
+  document.querySelectorAll('th[data-col]').forEach(th=>{
+    th.classList.remove('sa','sd');
+    if(th.dataset.col===sortCol) th.classList.add(sortDir==='asc'?'sa':'sd');
+  });
+
+  const tb=document.getElementById('tbody');
+  if(!f.length){
+    tb.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="ei">&#128269;</div>No devices match the current filters.</div></td></tr>`;
+    return;
+  }
+
+  tb.innerHTML=f.map(d=>{
+    const exp=expanded.has(d.ComputerName);
+    return `<tr>
+      <td><span style="font-family:var(--mono);font-size:12px;color:var(--hi)">${esc(d.ComputerName)}</span></td>
+      <td style="font-size:11px">${fmtShort(d.CollectedAt)}${d.Stale?'<span class="stale-pip">stale</span>':''}</td>
+      <td><span class="badge ${sBadge(d.Status)}"><span class="dot"></span>${esc(SL[d.Status]||d.Status||'Unknown')}</span></td>
+      <td>${d.ConfidenceLevel?`<span class="badge ${CBADGE[d.ConfidenceGroup]||'bd'}">${esc(d.ConfidenceLevel)}</span>`:'<span style="color:var(--dim)">—</span>'}</td>
+      <td style="font-size:11px;color:var(--muted)">${esc(d.SystemModel||'—')}</td>
+      <td>${biosReadyBadge(d)}</td>
+      <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${d.LastEventId||'—'}</span></td>
+      <td><span style="font-size:11px;color:${regColor(d.RegStatus)}">${d.RegStatus||'—'}</span></td>
+      <td class="etd" data-cn="${esc(d.ComputerName)}">${exp?'&#9660;':'&#9658;'}</td>
+    </tr>${exp?detailRow(d):''}`;
+  }).join('');
+
+  tb.querySelectorAll('.etd').forEach(td=>{
+    td.addEventListener('click',()=>{
+      const cn=td.dataset.cn;
+      if(expanded.has(cn)) expanded.delete(cn); else expanded.add(cn);
+      renderTable();
+    });
+  });
+}
+
+function detailRow(d){
+  const re=typeof d.RegError==='number'?(d.RegError===0
+    ?'<span style="color:var(--ok)">0 &mdash; no error</span>'
+    :`<span style="color:var(--err)">${esc(d.RegError)}</span>`):'—';
+
+  const rc=d.RegCapable!=null?({
+    0:'<span style="color:var(--warn)">0 &mdash; cert not in DB</span>',
+    1:'<span style="color:var(--inf)">1 &mdash; cert in DB</span>',
+    2:'<span style="color:var(--ok)">2 &mdash; cert + boot mgr</span>'}[d.RegCapable]||esc(String(d.RegCapable))):'—';
+
+  return `<tr class="drow"><td colspan="9"><div class="dcontent">
+    <div>
+      <div class="dgtitle">Hardware &amp; OS</div>
+      <div class="df"><span class="dk">OS</span><span class="dv">${esc(d.OSCaption||'—')}</span></div>
+      <div class="df"><span class="dk">Build</span><span class="dv dm">${esc(d.OSBuildNumber||'—')}</span></div>
+      <div class="df"><span class="dk">Manufacturer</span><span class="dv">${esc(d.SystemManufacturer||'—')}</span></div>
+      <div class="df"><span class="dk">Model</span><span class="dv">${esc(d.SystemModel||'—')}</span></div>
+      <div class="df"><span class="dk">Virtual machine</span><span class="dv">${d.IsVirtualMachine?'<span style="color:var(--warn)">Yes</span>':'No'}</span></div>
+      <div class="df"><span class="dk">Secure Boot</span><span class="dv">${dash(d.SecureBootStatus)}</span></div>
+    </div>
+    <div>
+      <div class="dgtitle">Status</div>
+      <div class="df"><span class="dk">Status token</span><span class="dv">${esc(d.Status)}</span></div>
+      <div class="df"><span class="dk">Status group</span><span class="dv">${esc(d.StatusGroup)}</span></div>
+      <div class="df"><span class="dk">Reg derived</span><span class="dv">${dash(d.RegDerivedStatus)}</span></div>
+      <div class="df"><span class="dk">Collected</span><span class="dv">${esc(fmtFull(d.CollectedAt)||'—')}</span></div>
+      <div class="df"><span class="dk">Stale</span><span class="dv">${d.Stale?'<span style="color:var(--ora)">Yes</span>':'No'}</span></div>
+      <div class="df"><span class="dk">Detail</span><span class="dv dit">${esc(d.StatusDetail)||'—'}</span></div>
+    </div>
+    <div>
+      <div class="dgtitle">Registry</div>
+      <div class="df"><span class="dk">UEFICA2023Status</span><span class="dv">${dash(d.RegStatus)}</span></div>
+      <div class="df"><span class="dk">UEFICA2023Error</span><span class="dv">${re}</span></div>
+      <div class="df"><span class="dk">ErrorEvent (ID)</span><span class="dv">${dash(d.RegErrorEvent)}</span></div>
+      <div class="df"><span class="dk">Capable (ref)</span><span class="dv">${rc}</span></div>
+      <div class="df"><span class="dk">Event count</span><span class="dv">${dash(d.EventCount)}</span></div>
+      <div class="df"><span class="dk">Last event ID</span><span class="dv">${dash(d.LastEventId)}</span></div>
+      <div class="df"><span class="dk">Last event time</span><span class="dv">${esc(fmtFull(d.LastEventTime)||'—')}</span></div>
+    </div>
+    <div>
+      <div class="dgtitle">Confidence &amp; Bucket</div>
+      <div class="df"><span class="dk">Confidence level</span><span class="dv">${dash(d.ConfidenceLevel)}</span></div>
+      <div class="df"><span class="dk">Source</span><span class="dv">${dash(d.ConfidenceLevelSource)}</span></div>
+      <div class="df"><span class="dk">Bucket hash</span><span class="dv dm">${esc(d.BucketHash)||'—'}</span></div>
+      <div class="df"><span class="dk">Device attrs</span><span class="dv dm">${esc(d.DeviceAttributes)||'—'}</span></div>
+      <div class="df"><span class="dk">Update type</span><span class="dv">${dash(d.UpdateType)}</span></div>
+      <div class="df"><span class="dk">Skip reason</span><span class="dv">${dash(d.SkipReason)}</span></div>
+    </div>
+    <div>
+      <div class="dgtitle">BIOS Details</div>
+      <div class="df"><span class="dk">BIOS manufacturer</span><span class="dv">${esc(d.BIOSManufacturer||'—')}</span></div>
+      <div class="df"><span class="dk">BIOS version (raw)</span><span class="dv dm" style="word-break:break-all">${esc(d.BIOSVersion||'—')}</span></div>
+      <div class="df"><span class="dk">BIOS version (parsed)</span><span class="dv dm">${esc(d.BIOSVersionParsed||'—')}</span></div>
+      <div class="df"><span class="dk">BIOS release date</span><span class="dv">${esc(d.BIOSReleaseDate||'—')}</span></div>
+      <div class="df"><span class="dk">BIOS ready</span><span class="dv">${biosReadyBadge(d)}</span></div>
+      <div class="df"><span class="dk">Min BIOS version</span><span class="dv dm">${esc(d.MinBiosVersion||'—')}</span></div>
+      <div class="df"><span class="dk">Matched table key</span><span class="dv dm" style="word-break:break-all">${esc(d.MatchedModel||'—')}</span></div>
+      <div class="df"><span class="dk">Match method</span><span class="dv">${d.MatchStage?`<span style="color:var(--muted);font-size:10px">${esc(d.MatchStage)}</span>`:'<span style="color:var(--dim)">—</span>'}</span></div>
+      <div class="df"><span class="dk">BIOS list source</span><span class="dv">${esc(d.BiosListSource||'—')}</span></div>
+      <div class="df"><span class="dk">Vendor (CSP)</span><span class="dv">${dash(d.CspVendor)}</span></div>
+      <div class="df"><span class="dk">CSP version</span><span class="dv dm" style="word-break:break-all">${esc(d.CspVersion)||'—'}</span></div>
+      <div class="df"><span class="dk">HP device</span><span class="dv">${d.IsHpDevice?'Yes':'No'}</span></div>
+      <div class="df"><span class="dk">SBKPFV3 present</span><span class="dv">${boolBadge(d.HpSbkpfv3Present,'Present','Missing')}</span></div>
+    </div>
+  </div></td></tr>`;
+}
+
+/* ─── Export ────────────────────────────────────────────────────────── */
+function doExport(){
+  const flds=['ComputerName','CollectedAt','Stale','Status','StatusGroup','StatusDetail',
+    'RegStatus','RegError','RegErrorEvent','RegCapable','RegDerivedStatus',
+    'ConfidenceLevel','ConfidenceLevelSource','BucketHash','DeviceAttributes',
+    'UpdateType','SkipReason',
+    'OSCaption','OSBuildNumber',
+    'SystemManufacturer','SystemModel',
+    'BIOSManufacturer','BIOSVersion','BIOSVersionParsed','BIOSReleaseDate',
+    'IsVirtualMachine','SecureBootStatus',
+    'BiosReadyStatus','BiosUpdateRequired','MinBiosVersion','BiosListSource',
+    'CspVendor','CspVersion','IsHpDevice','HpSbkpfv3Present',
+    'EventCount','LastEventId','LastEventTime'];
+  const q=v=>{if(v==null||v==='')return'';const s=String(v);
+    return(s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s};
+  const rows=[flds.join(','),...filtered().map(d=>flds.map(f=>q(d[f])).join(','))];
+  const a=Object.assign(document.createElement('a'),{
+    href:URL.createObjectURL(new Blob([rows.join('\r\n')],{type:'text/csv'})),
+    download:'SBCA2023_'+new Date().toISOString().slice(0,10)+'.csv'
+  });
+  a.click();URL.revokeObjectURL(a.href);
+}
+
+/* ─── Export HTML ────────────────────────────────────────────────────── */
+function doExportHTML(){
+  const fdata=filtered();
+
+  // Collect active filter descriptions for the report header
+  const fNotes=[];
+  const sv=document.getElementById('f-search').value;
+  if(sv) fNotes.push('Name contains "'+sv+'"');
+  const stv=document.getElementById('f-status').value;
+  if(stv) fNotes.push('Status: '+(SL[stv]||stv));
+  const cv=document.getElementById('f-conf').value;
+  if(cv) fNotes.push('Confidence Level: '+cv);
+  if(document.getElementById('f-bios-req').checked) fNotes.push('BIOS update needed');
+  if(document.getElementById('f-stale').checked) fNotes.push('Stale only');
+  if(cardFil) fNotes.push('Group: '+cardFil);
+  if(cgFil) fNotes.push('Confidence group: '+(CGLBL[cgFil]||cgFil));
+
+  // Summary counts
+  const tot=fdata.length,
+    comp=fdata.filter(d=>d.StatusGroup==='Compliant').length,
+    act=fdata.filter(d=>d.StatusGroup==='ActionRequired').length,
+    prog=fdata.filter(d=>d.StatusGroup==='InProgress').length,
+    unk=fdata.filter(d=>d.StatusGroup==='Unknown').length,
+    stale=fdata.filter(d=>d.Stale).length;
+
+  // Initial table order: Computer Name A-Z
+  const sorted=[...fdata].sort((a,b)=>
+    (a.ComputerName||'').localeCompare(b.ComputerName||'',undefined,{numeric:true}));
+
+  const now=new Date().toISOString().slice(0,16).replace('T',' ')+' UTC';
+  const expDate=new Date().toISOString().slice(0,10);
+
+  // Row builder used for the pre-rendered static HTML rows (dashboard scope)
+  const biosReadyCell=d=>{
+    const s=d.BiosReadyStatus;
+    if(s==='OK')        return '<span class="badge bg">OK</span>';
+    if(s==='Required')  return '<span class="badge br">Update Required</span>';
+    if(s==='EndOfLife') return '<span class="badge br">End of Life</span>';
+    if(s==='NotInList') return '<span class="badge bd">Not in List</span>';
+    return '<span style="color:#94a3b8;font-size:11px">N/A</span>';
+  };
+  const rcol=s=>s==='Updated'?'#16a34a':s==='InProgress'?'#d97706':'#64748b';
+  const mkRow=d=>'<tr>'
+    +'<td><span style="font-family:Consolas,\'Courier New\',monospace;font-size:12px;color:#0f172a">'+esc(d.ComputerName)+'</span></td>'
+    +'<td style="font-size:11px;white-space:nowrap">'+fmtShort(d.CollectedAt)+(d.Stale?'<span class="sp">stale</span>':'')+'</td>'
+    +'<td><span class="badge '+sBadge(d.Status)+'"><span class="dot"></span>'+esc(SL[d.Status]||d.Status||'Unknown')+'</span></td>'
+    +'<td>'+(d.ConfidenceLevel?'<span class="badge '+(CBADGE[d.ConfidenceGroup]||'bd')+'">'+esc(d.ConfidenceLevel)+'</span>':'<span style="color:#94a3b8">\u2014</span>')+'</td>'
+    +'<td style="font-size:11px;color:#64748b">'+esc(d.SystemModel||'\u2014')+'</td>'
+    +'<td>'+biosReadyCell(d)+'</td>'
+    +'<td><span style="font-family:Consolas,\'Courier New\',monospace;font-size:11px;color:#64748b">'+(d.LastEventId||'\u2014')+'</span></td>'
+    +'<td><span style="font-size:11px;color:'+rcol(d.RegStatus)+'">'+(d.RegStatus||'\u2014')+'</span></td>'
+    +'</tr>';
+
+  // Embed data + TIPS as JSON; <\/ escape prevents the tag sequence from appearing in the embedded string
+  const dataJson=JSON.stringify(sorted).replace(/<\//g,'<\\/');
+  const tipsJson=JSON.stringify(TIPS).replace(/<\//g,'<\\/');
+  const filterLine=fNotes.length
+    ?'<div class="rpt-filter">Filters active: '+fNotes.map(esc).join(' &middot; ')+'</div>'
+    :'';
+
+  const html='<!DOCTYPE html>\n'
++'<html lang="en">\n'
++'<head>\n'
++'<meta charset="UTF-8">\n'
++'<meta name="viewport" content="width=device-width,initial-scale=1">\n'
++'<title>Secure Boot CA 2023 \u2014 Status Report '+expDate+'</title>\n'
++'<style>\n'
++'*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}\n'
++':root{--bg:#f0f4f8;--s0:#fff;--s1:#f8fafc;--s2:#eef2f7;--b0:#dde5ef;\n'
++'  --text:#334155;--hi:#0f172a;--muted:#64748b;--dim:#94a3b8;--cyan:#0284c7;\n'
++'  --ok:#16a34a;--ok-bg:#f0fdf4;--err:#dc2626;--err-bg:#fef2f2;\n'
++'  --warn:#d97706;--warn-bg:#fffbeb;--inf:#6366f1;--inf-bg:#f5f3ff;\n'
++'  --ora:#ea580c;--mono:\'Consolas\',\'Courier New\',monospace;--r:4px}\n'
++'body{font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',system-ui,sans-serif;\n'
++'  font-size:13px;color:var(--text);background:var(--bg);line-height:1.5}\n'
++'.rpt-header{background:var(--s0);border-bottom:1px solid var(--b0);padding:16px 24px}\n'
++'.rpt-title{font-size:18px;font-weight:700;color:var(--hi);margin-bottom:4px}\n'
++'.rpt-meta{font-size:12px;color:var(--muted)}\n'
++'.rpt-filter{font-size:11px;color:var(--cyan);margin-top:4px}\n'
++'.sum-row{display:flex;gap:10px;padding:16px 24px;flex-wrap:wrap}\n'
++'.sum-card{background:var(--s0);border:1px solid var(--b0);\n'
++'  border-top:2px solid var(--ca,var(--b0));border-radius:var(--r);padding:10px 14px;min-width:90px}\n'
++'.sum-card .lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;\n'
++'  color:var(--muted);margin-bottom:4px}\n'
++'.sum-card .num{font-family:var(--mono);font-size:24px;font-weight:700;\n'
++'  color:var(--ca,var(--hi));line-height:1}\n'
++'.tbl-wrap{padding:0 24px 40px;overflow-x:auto}\n'
++'table{width:100%;border-collapse:collapse;background:var(--s0);\n'
++'  border:1px solid var(--b0);border-radius:var(--r);overflow:hidden}\n'
++'thead tr{background:var(--s1);border-bottom:1px solid var(--b0)}\n'
++'th{padding:8px 12px;text-align:left;font-size:10px;font-weight:600;\n'
++'  text-transform:uppercase;letter-spacing:1px;color:var(--muted);\n'
++'  cursor:pointer;user-select:none;white-space:nowrap}\n'
++'th:hover{color:var(--text)}\n'
++'th.sa .si::after{content:\' \u2191\';color:var(--cyan)}\n'
++'th.sd .si::after{content:\' \u2193\';color:var(--cyan)}\n'
++'td{padding:7px 12px;border-bottom:1px solid var(--b0);vertical-align:middle}\n'
++'tbody tr:last-child td{border-bottom:none}\n'
++'tbody tr:hover td{background:var(--s1)}\n'
++'.badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;\n'
++'  border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}\n'
++'.dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}\n'
++'.pulse .dot{animation:dp 2s ease-in-out infinite}\n'
++'@keyframes dp{0%,100%{opacity:1}50%{opacity:.25}}\n'
++'.bg{color:var(--ok);background:var(--ok-bg)}\n'
++'.br{color:var(--err);background:var(--err-bg)}\n'
++'.bw{color:var(--warn);background:var(--warn-bg)}\n'
++'.bi{color:var(--inf);background:var(--inf-bg)}\n'
++'.bc{color:var(--cyan);background:rgba(2,132,199,.08)}\n'
++'.bd{color:var(--dim);background:var(--s2)}\n'
++'.sp{display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;\n'
++'  color:var(--ora);border:1px solid var(--ora);border-radius:3px;\n'
++'  padding:0 4px;margin-left:5px;vertical-align:middle}\n'
++'.th-info{display:inline-flex;align-items:center;justify-content:center;\n'
++'  width:13px;height:13px;border-radius:50%;background:var(--s2);\n'
++'  border:1px solid var(--b0);color:var(--muted);font-size:8px;font-weight:700;\n'
++'  cursor:help;margin-left:5px;vertical-align:middle;transition:all .14s;line-height:1}\n'
++'.th-info:hover{background:var(--cyan);color:#fff;border-color:var(--cyan)}\n'
++'#ct{position:fixed;z-index:9999;width:300px;background:#fff;\n'
++'  border:1px solid var(--b0);border-radius:6px;\n'
++'  box-shadow:0 6px 24px rgba(0,0,0,.11);padding:14px 16px;\n'
++'  font-size:12px;color:var(--text);line-height:1.55;pointer-events:none}\n'
++'#ct .tip-title{font-size:13px;font-weight:700;color:var(--hi);display:block;margin-bottom:7px}\n'
++'#ct .tip-body{color:var(--muted);font-size:12px}\n'
++'#ct .tip-body+.tip-body{margin-top:5px}\n'
++'#ct .tip-reg{font-family:var(--mono);font-size:10px;color:var(--muted);\n'
++'  background:var(--s2);border-radius:3px;padding:3px 6px;display:block;\n'
++'  margin:6px 0;word-break:break-all}\n'
++'#ct .tip-em{color:var(--cyan);font-style:normal;font-weight:600}\n'
++'#ct .tip-vals{margin-top:9px;border-top:1px solid var(--b0);padding-top:9px}\n'
++'#ct .tip-val{display:flex;gap:7px;margin-bottom:5px;align-items:flex-start}\n'
++'#ct .tip-val:last-child{margin-bottom:0}\n'
++'#ct .tv-name{font-family:var(--mono);font-size:10px;color:var(--cyan);\n'
++'  flex:0 0 auto;white-space:nowrap;padding-top:1px}\n'
++'#ct .tv-desc{color:var(--muted);font-size:11px}\n'
++'#ct .tip-note{margin-top:9px;padding-top:9px;border-top:1px solid var(--b0);\n'
++'  font-size:11px;color:var(--dim)}\n'
++'.rpt-footer{padding:12px 24px;font-size:11px;color:var(--dim);\n'
++'  border-top:1px solid var(--b0);background:var(--s0);margin-top:16px;text-align:right}\n'
++'@media print{#ct{display:none!important}.th-info{display:none!important}}\n'
++'</style>\n'
++'</head>\n'
++'<body>\n'
++'<div class="rpt-header">\n'
++'  <div class="rpt-title">&#128272; Secure Boot CA 2023 \u2014 Status Report</div>\n'
++'  <div class="rpt-meta">Exported: '+esc(now)+' &nbsp;&bull;&nbsp; Source: '+esc(meta.source||'\u2014')+' &nbsp;&bull;&nbsp; '+tot+' device'+(tot!==1?'s':'')+' shown'+(fNotes.length?' (filtered)':'')+'</div>\n'
++filterLine+'\n'
++'</div>\n'
++'<div class="sum-row">\n'
++'  <div class="sum-card" style="--ca:#0284c7"><div class="lbl">Total</div><div class="num">'+tot+'</div></div>\n'
++'  <div class="sum-card" style="--ca:#16a34a"><div class="lbl">Complete</div><div class="num">'+comp+'</div></div>\n'
++'  <div class="sum-card" style="--ca:#dc2626"><div class="lbl">Action Required</div><div class="num">'+act+'</div></div>\n'
++'  <div class="sum-card" style="--ca:#d97706"><div class="lbl">In Progress</div><div class="num">'+prog+'</div></div>\n'
++'  <div class="sum-card" style="--ca:#6366f1"><div class="lbl">Unknown</div><div class="num">'+unk+'</div></div>\n'
++'  <div class="sum-card" style="--ca:#ea580c"><div class="lbl">Stale (&gt;7d)</div><div class="num">'+stale+'</div></div>\n'
++'</div>\n'
++'<div class="tbl-wrap"><table>\n'
++'<thead><tr>\n'
++'  <th data-col="ComputerName" class="sa">Computer Name <span class="si"></span></th>\n'
++'  <th data-col="CollectedAt">Collected <span class="si"></span></th>\n'
++'  <th data-col="Status">Status <span class="si"></span><span class="th-info" data-tip="status">i</span></th>\n'
++'  <th data-col="ConfidenceLevel">Confidence Level <span class="si"></span><span class="th-info" data-tip="confidence">i</span></th>\n'
++'  <th data-col="SystemModel">Model <span class="si"></span></th>\n'
++'  <th data-col="BiosReadyStatus">BIOS Ready <span class="si"></span><span class="th-info" data-tip="biosready">i</span></th>\n'
++'  <th data-col="LastEventId">Last Event <span class="si"></span></th>\n'
++'  <th data-col="RegStatus">Reg Status <span class="si"></span><span class="th-info" data-tip="regstatus">i</span></th>\n'
++'</tr></thead>\n'
++'<tbody id="rtb">'+sorted.map(mkRow).join('')+'</tbody>\n'
++'</table></div>\n'
++'<div class="rpt-footer">Generated by SBCA2023 Dashboard &nbsp;&bull;&nbsp; '+esc(now)+'</div>\n'
++'<div id="ct" style="display:none"></div>\n'
++'<script>\n'
++'(function(){\n'
++'const DATA='+dataJson+';\n'
++'const TIPS='+tipsJson+';\n'
++'const SL={COMPLETE:"Complete",COMPLETE_REG:"Complete (Reg)",NOT_STARTED:"Not Started",\n'
++'  IN_PROGRESS:"In Progress",PENDING_REBOOT:"Pending: Reboot",\n'
++'  PENDING_FIRMWARE:"Pending: Firmware",PENDING:"Pending",\n'
++'  BLOCKED_BITLOCKER:"Blocked: BitLocker",BLOCKED_BOOTLOADER:"Blocked: Boot Loader",\n'
++'  BLOCKED_FIRMWARE_ISSUE:"Blocked: Firmware",BLOCKED_NO_KEK:"Blocked: No KEK",\n'
++'  BLOCKED:"Blocked",ERROR_FIRMWARE:"Error: Firmware",ERROR_UNEXPECTED:"Error: Unexpected",\n'
++'  ERROR_DB_MISSING:"Error: DB Missing",ERROR_BOOTMGR_UNSIGNED:"Error: Boot Mgr",\n'
++'  ERROR:"Error",PARTIAL_REG:"Partial (Reg)",NO_EVENTS:"No Events",\n'
++'  LOG_ACCESS_ERR:"Log Error",UNKNOWN:"Unknown"};\n'
++'const CBADGE={HighConfidence:"bg",TemporarilyPaused:"bw",NotSupported:"br",\n'
++'  UnderObservation:"bc",NoData:"bd",Other:"bi"};\n'
++'let sCol="ComputerName",sDir="asc",tData=[...DATA];\n'
++'function e(v){if(v==null)return"";return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}\n'
++'function fs(iso){if(!iso)return"\u2014";try{return new Date(iso).toISOString().slice(0,10)}catch(x){return iso}}\n'
++'function sb(s){if(!s)return"bd";if(s==="COMPLETE"||s==="COMPLETE_REG")return"bg";\n'
++'  if(s.startsWith("BLOCKED")||s==="LOG_ACCESS_ERR"||s.startsWith("ERROR"))return"br";\n'
++'  if(s==="NOT_STARTED"||s==="PARTIAL_REG")return"bi";\n'
++'  if(s.startsWith("PENDING")||s==="IN_PROGRESS")return"bw pulse";return"bd";}\n'
++'function rc(s){return s==="Updated"?"#16a34a":s==="InProgress"?"#d97706":"#64748b"}\n'
++'function brb(d){\n'
++'  var s=d.BiosReadyStatus;\n'
++'  if(s==="OK")return\'<span class="badge bg">OK</span>\';\n'
++'  if(s==="Required")return\'<span class="badge br">Update Required</span>\';\n'
++'  if(s==="EndOfLife")return\'<span class="badge br">End of Life</span>\';\n'
++'  if(s==="NotInList")return\'<span class="badge bd">Not in List</span>\';\n'
++'  return\'<span style="color:#94a3b8;font-size:11px">N\\/A</span>\';}\n'
++'function mkRow(d){\n'
++'  return "<tr>"\n'
++'    +"<td><span style=\\"font-family:Consolas,\'Courier New\',monospace;font-size:12px;color:#0f172a\\">"+e(d.ComputerName)+"</span></td>"\n'
++'    +"<td style=\\"font-size:11px;white-space:nowrap\\">"+fs(d.CollectedAt)+(d.Stale?"<span class=\\"sp\\">stale</span>":"")+"</td>"\n'
++'    +"<td><span class=\\"badge "+sb(d.Status)+"\\"><span class=\\"dot\\"></span>"+e(SL[d.Status]||d.Status||"Unknown")+"</span></td>"\n'
++'    +"<td>"+(d.ConfidenceLevel?"<span class=\\"badge "+(CBADGE[d.ConfidenceGroup]||"bd")+"\\">" +e(d.ConfidenceLevel)+"</span>":"<span style=\\"color:#94a3b8\\">\u2014</span>")+"</td>"\n'
++'    +"<td style=\\"font-size:11px;color:#64748b\\">"+e(d.SystemModel||"\u2014")+"</td>"\n'
++'    +"<td>"+brb(d)+"</td>"\n'
++'    +"<td><span style=\\"font-family:Consolas,\'Courier New\',monospace;font-size:11px;color:#64748b\\">"+(d.LastEventId||"\u2014")+"</span></td>"\n'
++'    +"<td><span style=\\"font-size:11px;color:"+rc(d.RegStatus)+"\\">"+(d.RegStatus||"\u2014")+"</span></td>"\n'
++'    +"</tr>";}\n'
++'function renderTbody(){document.getElementById("rtb").innerHTML=tData.map(mkRow).join("");}\n'
++'function sortBy(col){\n'
++'  if(sCol===col)sDir=sDir==="asc"?"desc":"asc";\n'
++'  else{sCol=col;sDir="asc";}\n'
++'  tData.sort((a,b)=>{\n'
++'    let av=a[col],bv=b[col];\n'
++'    if(av==null)av="";if(bv==null)bv="";\n'
++'    const c=String(av).localeCompare(String(bv),undefined,{numeric:true});\n'
++'    return sDir==="asc"?c:-c;\n'
++'  });\n'
++'  renderTbody();\n'
++'  document.querySelectorAll("th[data-col]").forEach(th=>{\n'
++'    th.classList.remove("sa","sd");\n'
++'    if(th.dataset.col===sCol)th.classList.add(sDir==="asc"?"sa":"sd");\n'
++'  });\n'
++'}\n'
++'document.querySelectorAll("th[data-col]").forEach(th=>th.addEventListener("click",()=>sortBy(th.dataset.col)));\n'
++'document.querySelectorAll(".th-info").forEach(el=>el.addEventListener("click",ev=>ev.stopPropagation()));\n'
++'const ct=document.getElementById("ct");\n'
++'function posTip(icon){\n'
++'  const r=icon.getBoundingClientRect(),w=300,m=10;\n'
++'  let left=r.left,top=r.bottom+6;\n'
++'  if(left+w>window.innerWidth-m)left=window.innerWidth-w-m;\n'
++'  if(left<m)left=m;\n'
++'  ct.style.left=left+"px";ct.style.top=top+"px";\n'
++'}\n'
++'document.addEventListener("mouseover",e=>{\n'
++'  const icon=e.target.closest(".th-info");if(!icon)return;\n'
++'  const c=TIPS[icon.dataset.tip];if(!c)return;\n'
++'  ct.innerHTML=c;ct.style.display="block";posTip(icon);\n'
++'});\n'
++'document.addEventListener("mouseout",e=>{if(e.target.closest(".th-info"))ct.style.display="none";});\n'
++'})();\n'
++'<\/script>\n'
++'</body>\n'
++'</html>';
+
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const a=Object.assign(document.createElement('a'),{
+    href:URL.createObjectURL(blob),
+    download:'SBCA2023_Report_'+expDate+'.html'
+  });
+  a.click();URL.revokeObjectURL(a.href);
+}
+
+/* ─── Wire ──────────────────────────────────────────────────────────── */
+const fi=document.getElementById('file-input');
+const dz=document.getElementById('dropzone');
+dz.addEventListener('click',()=>fi.click());
+document.getElementById('browse').addEventListener('click',e=>{e.stopPropagation();fi.click();});
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');loadFiles(e.dataTransfer.files);});
+fi.addEventListener('change',e=>{if(e.target.files.length){loadFiles(e.target.files);fi.value='';}});
+
+document.getElementById('btn-reload').addEventListener('click',()=>{
+  document.getElementById('screen-upload').hidden=false;
+  document.getElementById('screen-dashboard').hidden=true;
+  devs=[];meta={};
+});
+document.getElementById('btn-export-csv').addEventListener('click',doExport);
+document.getElementById('btn-export-html').addEventListener('click',doExportHTML);
+
+['f-search','f-status','f-conf'].forEach(id=>
+  document.getElementById(id).addEventListener('input',renderTable));
+['f-bios-req','f-stale'].forEach(id=>
+  document.getElementById(id).addEventListener('change',renderTable));
+
+document.getElementById('btn-clear').addEventListener('click',()=>{
+  document.getElementById('f-search').value='';
+  document.getElementById('f-status').value='';
+  document.getElementById('f-conf').value='';
+  document.getElementById('f-bios-req').checked=false;
+  document.getElementById('f-stale').checked=false;
+  cardFil='';cgFil='';
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('on'));
+  document.querySelectorAll('.crow[data-cg]').forEach(r=>r.classList.remove('fil'));
+  renderTable();
+});
+
+document.querySelectorAll('th[data-col]').forEach(th=>{
+  th.addEventListener('click',()=>{
+    if(sortCol===th.dataset.col) sortDir=sortDir==='asc'?'desc':'asc';
+    else{sortCol=th.dataset.col;sortDir='asc';}
+    renderTable();
+  });
+});
+
+/* ─── Column tooltips ────────────────────────────────────────────────── */
+/* Tooltip content per column — plain HTML inserted into #col-tip */
+const TIPS={
+  status:`
+    <span class="tip-title">Status</span>
+    <p class="tip-body">The collector script's processed verdict for this device, derived from two sources and combined into a single token:</p>
+    <p class="tip-body"><span class="tip-em">Registry (primary)</span> — reads the <code style="font-family:var(--mono);font-size:10px">UEFICA2023Status</code> key. Available only on devices with the November 2025 or later Windows update.</p>
+    <p class="tip-body"><span class="tip-em">Event log (fallback)</span> — reads TPM-WMI provider events (IDs 1032–1808) from the System log. Used when the registry key is absent.</p>
+    <div class="tip-vals">
+      <div class="tip-val"><span class="tv-name">Complete</span><span class="tv-desc">CA 2023 update fully applied</span></div>
+      <div class="tip-val"><span class="tv-name">Pending: *</span><span class="tv-desc">In progress — waiting on a reboot or firmware action</span></div>
+      <div class="tip-val"><span class="tv-name">Blocked: *</span><span class="tv-desc">A specific condition (BitLocker, boot loader, firmware, no KEK) is preventing the update</span></div>
+      <div class="tip-val"><span class="tv-name">Error: *</span><span class="tv-desc">An error was encountered during the update process</span></div>
+      <div class="tip-val"><span class="tv-name">Not Started</span><span class="tv-desc">Device is eligible but has not yet begun</span></div>
+      <div class="tip-val"><span class="tv-name">No Events</span><span class="tv-desc">No usable registry key or event log data was found</span></div>
+    </div>`,
+
+  confidence:`
+    <span class="tip-title">Confidence Level</span>
+    <p class="tip-body">Microsoft's own confidence assessment of the CA 2023 update status on this device. Windows writes this value directly to the <code style="font-family:var(--mono);font-size:10px">ConfidenceLevel</code> registry key.</p>
+    <p class="tip-body">Requires the <span class="tip-em">November 2025 or later</span> Windows update — devices without it show —. This is separate from the collector's Status assessment.</p>
+    <div class="tip-vals">
+      <div class="tip-val"><span class="tv-name">High Confidence</span><span class="tv-desc">Status is reliable; update can proceed normally</span></div>
+      <div class="tip-val"><span class="tv-name">Temporarily Paused</span><span class="tv-desc">Update intentionally paused by Windows (e.g. during phased rollout)</span></div>
+      <div class="tip-val"><span class="tv-name">Under Observation</span><span class="tv-desc">Windows needs more data before proceeding; monitor for changes</span></div>
+      <div class="tip-val"><span class="tv-name">Not Supported</span><span class="tv-desc">Device or firmware does not support this update</span></div>
+      <div class="tip-val"><span class="tv-name">No Data Observed</span><span class="tv-desc">Insufficient telemetry to assess; check back after next Windows update cycle</span></div>
+    </div>`,
+
+  biosready:`
+    <span class="tip-title">BIOS Ready</span>
+    <p class="tip-body">Whether this device's installed BIOS version meets the minimum required for the CA 2023 update. Versions are checked against vendor-published compatibility tables.</p>
+    <p class="tip-body"><span class="tip-em">HP</span> — sourced from HP Support document ISH_13070353 (April 2026). <span class="tip-em">Dell</span> — sourced from Dell KB 000347876 (April 2026). Devices from other vendors show N/A.</p>
+    <p class="tip-body">For HP devices, the SBKPFV3 string check (Win32_ComputerSystemProduct.Version) is also shown in the expanded detail row as an additional confirmation.</p>
+    <div class="tip-vals">
+      <div class="tip-val"><span class="tv-name">OK</span><span class="tv-desc">Installed BIOS meets or exceeds the minimum version — no blocker from this side</span></div>
+      <div class="tip-val"><span class="tv-name">Update Required</span><span class="tv-desc">BIOS must be updated before the CA 2023 update can proceed</span></div>
+      <div class="tip-val"><span class="tv-name">End of Life</span><span class="tv-desc">No BIOS update is available — vendor has ended support for this model</span></div>
+      <div class="tip-val"><span class="tv-name">Not in List</span><span class="tv-desc">Model is not in the vendor compatibility table; status cannot be determined from this data</span></div>
+      <div class="tip-val"><span class="tv-name">N/A</span><span class="tv-desc">Device is not HP or Dell, or data was collected with an older script version</span></div>
+    </div>`,
+
+  regstatus:`
+    <span class="tip-title">Reg Status</span>
+    <p class="tip-body">The raw value of the <code style="font-family:var(--mono);font-size:10px">UEFICA2023Status</code> registry key, read directly from:</p>
+    <span class="tip-reg">HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecureBoot\\Servicing</span>
+    <div class="tip-vals">
+      <div class="tip-val"><span class="tv-name">Updated</span><span class="tv-desc">CA 2023 update has been applied</span></div>
+      <div class="tip-val"><span class="tv-name">InProgress</span><span class="tv-desc">Update has started but is not yet complete</span></div>
+      <div class="tip-val"><span class="tv-name">NotStarted</span><span class="tv-desc">Device has not begun the update process</span></div>
+      <div class="tip-val"><span class="tv-name">—</span><span class="tv-desc">Key is absent; device lacks the November 2025+ Windows update</span></div>
+    </div>
+    <p class="tip-note"><span class="tip-em">vs. Status:</span> The Status column is richer — it also factors in the error code (UEFICA2023Error), event log events, and vendor BIOS readiness (HP/Dell). Reg Status shows the underlying raw value for verification and troubleshooting.</p>`
+};
+
+/* Global tooltip element */
+const colTip=document.createElement('div');
+colTip.id='col-tip';
+document.body.appendChild(colTip);
+
+/* Position the tooltip below the triggering icon, keeping it inside the viewport */
+function posTip(icon){
+  const r=icon.getBoundingClientRect();
+  const w=300, margin=10;
+  let left=r.left;
+  let top=r.bottom+6;
+  if(left+w>window.innerWidth-margin) left=window.innerWidth-w-margin;
+  if(left<margin) left=margin;
+  colTip.style.left=left+'px';
+  colTip.style.top=top+'px';
+}
+
+/* Show on mouseenter, hide on mouseleave — use event delegation on document */
+document.addEventListener('mouseover',e=>{
+  const icon=e.target.closest('.th-info');
+  if(!icon) return;
+  const content=TIPS[icon.dataset.tip];
+  if(!content) return;
+  colTip.innerHTML=content;
+  colTip.style.display='block';
+  posTip(icon);
+});
+
+document.addEventListener('mouseout',e=>{
+  if(e.target.closest('.th-info')) colTip.style.display='none';
+});
+
+/* Prevent info icon clicks from triggering column sort */
+document.querySelectorAll('.th-info').forEach(el=>{
+  el.addEventListener('click',e=>e.stopPropagation());
+});
+</script>
+</body>
+</html>

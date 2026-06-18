@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Boot CA 2023 — AD Monitoring Toolchain Documentation</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+:root {
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--bg4:#2d333b;
+  --border:#30363d;--border2:#444c56;
+  --text:#e6edf3;--muted:#7d8590;--dim:#545d68;
+  --accent:#58a6ff;
+  --green:#3fb950;--green-bg:#1a4a23;--green-border:#2ea043;
+  --red:#f85149;--red-bg:#4a1c1a;--red-border:#da3633;
+  --yellow:#d29922;--yellow-bg:#3d2e0a;
+  --orange:#e3b341;
+  --purple:#bc8cff;--purple-bg:rgba(188,140,255,.1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.75;font-size:.95rem;}
+a{color:var(--accent);text-decoration:none;}
+a:hover{text-decoration:underline;}
+code,pre{font-family:'IBM Plex Mono',monospace;}
+.layout{display:flex;min-height:100vh;}
+.toc{width:268px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);padding:28px 0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.content{flex:1;max-width:900px;padding:52px 60px;}
+.toc-logo{padding:0 24px 20px;border-bottom:1px solid var(--border);margin-bottom:16px;}
+.toc-logo-title{font-size:.85rem;font-weight:700;color:var(--text);line-height:1.3;}
+.toc-logo-sub{font-size:.72rem;color:var(--muted);margin-top:2px;}
+.toc-group-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);padding:10px 24px 4px;}
+.toc-item{display:block;padding:5px 24px;font-size:.82rem;color:var(--muted);border-left:2px solid transparent;transition:all .15s;}
+.toc-item:hover{color:var(--accent);border-color:var(--accent);background:rgba(88,166,255,.05);text-decoration:none;}
+.toc-item.active{color:var(--accent);border-color:var(--accent);background:rgba(88,166,255,.07);}
+.toc-item.sub{padding-left:38px;font-size:.79rem;}
+.toc-divider{height:1px;background:var(--border);margin:12px 24px;}
+h1{font-size:1.9rem;font-weight:700;letter-spacing:-.02em;line-height:1.25;margin-bottom:.5rem;}
+h2{font-size:1.25rem;font-weight:600;margin:3rem 0 1rem;padding-bottom:.6rem;border-bottom:1px solid var(--border);}
+h3{font-size:1rem;font-weight:600;margin:2rem 0 .6rem;color:var(--text);}
+h4{font-size:.9rem;font-weight:600;margin:1.5rem 0 .4rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+p{margin-bottom:1rem;color:#c9d1d9;}
+ul,ol{margin:.5rem 0 1rem 1.4rem;}
+li{margin-bottom:.3rem;color:#c9d1d9;}
+strong{color:var(--text);font-weight:600;}
+.intro{border-left:3px solid var(--accent);padding:.8rem 1.2rem;background:rgba(88,166,255,.06);border-radius:0 6px 6px 0;margin-bottom:2rem;}
+.intro p{margin:0;}
+.badge{display:inline-block;font-size:.72rem;font-weight:600;padding:2px 9px;border-radius:99px;margin-right:4px;vertical-align:middle;}
+.badge-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+.badge-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
+.badge-yellow{background:var(--yellow-bg);color:var(--yellow);border:1px solid #5a4106;}
+.badge-blue{background:rgba(88,166,255,.1);color:var(--accent);border:1px solid rgba(88,166,255,.3);}
+.badge-gray{background:var(--bg3);color:var(--muted);border:1px solid var(--border2);}
+.version-pill{font-size:.75rem;font-weight:600;background:rgba(88,166,255,.12);color:var(--accent);border:1px solid rgba(88,166,255,.3);border-radius:99px;padding:2px 10px;margin-left:10px;vertical-align:middle;}
+code{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:.85em;color:#ffa657;}
+pre{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.2rem 1.4rem;overflow-x:auto;margin:1rem 0 1.5rem;font-size:.82rem;line-height:1.65;}
+pre code{background:none;border:none;padding:0;font-size:inherit;color:#c9d1d9;}
+.callout{border-radius:8px;padding:.9rem 1.2rem;margin:1.2rem 0;display:flex;gap:.7rem;align-items:flex-start;}
+.callout-icon{flex-shrink:0;font-size:1rem;margin-top:.1rem;}
+.callout-body p{margin:0;font-size:.9rem;}
+.callout-body strong{display:block;margin-bottom:.2rem;}
+.callout.info{background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.25);}
+.callout.warning{background:var(--yellow-bg);border:1px solid #5a4106;}
+.callout.success{background:var(--green-bg);border:1px solid var(--green-border);}
+.callout.danger{background:var(--red-bg);border:1px solid var(--red-border);}
+table{width:100%;border-collapse:collapse;font-size:.88rem;margin:1rem 0 1.5rem;}
+th{background:var(--bg3);color:var(--muted);font-weight:600;text-align:left;padding:8px 12px;border:1px solid var(--border);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;}
+td{padding:9px 12px;border:1px solid var(--border);color:#c9d1d9;vertical-align:top;}
+tr:nth-child(even) td{background:rgba(255,255,255,.02);}
+.steps{counter-reset:step;}
+.step{display:flex;gap:1.2rem;margin-bottom:1.5rem;}
+.step-num{flex-shrink:0;width:28px;height:28px;background:rgba(88,166,255,.15);border:1px solid rgba(88,166,255,.4);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:var(--accent);margin-top:.15rem;}
+.step-body h4{margin:0 0 .3rem;font-size:.9rem;color:var(--text);text-transform:none;letter-spacing:0;}
+.step-body p{margin:0;font-size:.9rem;}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:1rem 0 1.5rem;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;}
+.stat-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem;}
+.stat-value{font-size:1.5rem;font-weight:700;}
+.stat-value.green{color:var(--green);}
+.stat-value.red{color:var(--red);}
+.stat-value.yellow{color:var(--yellow);}
+.stat-value.blue{color:var(--accent);}
+.changelog-entry{border-left:2px solid var(--border2);padding:.6rem 0 .6rem 1.2rem;margin-bottom:.8rem;}
+.changelog-version{font-weight:700;color:var(--text);font-size:.9rem;}
+.changelog-date{font-size:.78rem;color:var(--muted);margin-left:.5rem;}
+.changelog-entry ul{margin:.4rem 0 0 1rem;}
+.changelog-entry li{font-size:.87rem;margin-bottom:.15rem;}
+hr{border:none;border-top:1px solid var(--border);margin:2.5rem 0;}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="toc">
+  <div class="toc-logo">
+    <div class="toc-logo-title">Secure Boot CA 2023</div>
+    <div class="toc-logo-sub">AD Toolchain &middot; Documentation v4.0</div>
+  </div>
+
+  <div class="toc-group-label">Overview</div>
+  <a class="toc-item" href="#overview">What is this toolchain?</a>
+  <a class="toc-item" href="#architecture">Architecture</a>
+  <a class="toc-item" href="#requirements">Requirements</a>
+
+  <div class="toc-divider"></div>
+  <div class="toc-group-label">Deployment</div>
+  <a class="toc-item" href="#share">Network share setup</a>
+  <a class="toc-item" href="#collector">Collector script</a>
+  <a class="toc-item sub" href="#collector-config">Configuration</a>
+  <a class="toc-item sub" href="#collector-output">Output fields</a>
+  <a class="toc-item" href="#gpo">GPO scheduled task</a>
+  <a class="toc-item" href="#aggregator">Aggregator script</a>
+  <a class="toc-item sub" href="#aggregator-config">Configuration</a>
+  <a class="toc-item sub" href="#aggregator-output">Output files</a>
+
+  <div class="toc-divider"></div>
+  <div class="toc-group-label">Dashboard</div>
+  <a class="toc-item" href="#import">Loading data</a>
+  <a class="toc-item" href="#panels">Summary panels</a>
+  <a class="toc-item" href="#filters">Filters &amp; sorting</a>
+  <a class="toc-item" href="#table">Table columns</a>
+  <a class="toc-item" href="#detail">Row detail</a>
+  <a class="toc-item" href="#export">Export functions</a>
+
+  <div class="toc-divider"></div>
+  <div class="toc-group-label">Reference</div>
+  <a class="toc-item" href="#bios-check">BIOS compliance check</a>
+  <a class="toc-item sub" href="#model-matching">Model matching</a>
+  <a class="toc-item sub" href="#version-comparison">Version comparison</a>
+  <a class="toc-item" href="#status-tokens">Status tokens</a>
+  <a class="toc-item" href="#confidence">Confidence Level values</a>
+  <a class="toc-item" href="#troubleshooting">Troubleshooting</a>
+
+  <div class="toc-divider"></div>
+  <a class="toc-item" href="#changelog">Changelog</a>
+</nav>
+
+<main class="content">
+
+  <h1>Secure Boot CA 2023 <span class="version-pill">AD Toolchain v4.0</span></h1>
+
+  <div class="intro">
+    <p>A three-component toolchain for monitoring the Windows Secure Boot CA 2023 certificate update status across Active Directory-joined devices. No Intune, no Microsoft Graph API, no agent &mdash; data is collected via a GPO-deployed PowerShell script and visualised in a self-contained browser dashboard.</p>
+  </div>
+
+  <h2 id="overview">What is this toolchain?</h2>
+  <p>The <strong>Windows Secure Boot CA 2023</strong> update replaces ageing Secure Boot certificates on Windows devices. Microsoft is rolling out the update in phases from 2024 onwards; devices must meet BIOS version prerequisites before the certificate update can be applied.</p>
+  <p>This toolchain is designed for environments managed via <strong>Active Directory and Group Policy</strong> without Intune. It gives administrators the same level of status visibility as the native Intune Secure Boot Status report &mdash; covering CA 2023 rollout progress, registry state, event log diagnostics, and vendor BIOS readiness.</p>
+
+  <div class="stat-row">
+    <div class="stat-card"><div class="stat-label">Components</div><div class="stat-value blue">3</div></div>
+    <div class="stat-card"><div class="stat-label">Dell models in DB</div><div class="stat-value blue">~300</div></div>
+    <div class="stat-card"><div class="stat-label">HP models in DB</div><div class="stat-value blue">~250</div></div>
+    <div class="stat-card"><div class="stat-label">Status tokens</div><div class="stat-value green">20+</div></div>
+  </div>
+
+  <div class="callout info">
+    <span class="callout-icon">&#x2139;&#xFE0F;</span>
+    <div class="callout-body"><p>All data is processed locally. The dashboard works entirely offline once the HTML file is opened &mdash; no data is transmitted to any server. The collector writes only to the configured network share within your own environment.</p></div>
+  </div>
+
+  <h2 id="architecture">Architecture</h2>
+  <p>The toolchain consists of three components that run independently:</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Collector — <code>Get-SecureBootCA2023StatusFull_v4.0.ps1</code></h4>
+        <p>Deployed via GPO Scheduled Task to every domain-joined Windows device. Runs as SYSTEM and writes a per-device JSON file to a central network share. Collects CA 2023 registry state, event log events, OS version, hardware and BIOS information.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Aggregator — <code>Merge-SecureBootCA2023Status_v4.0.ps1</code></h4>
+        <p>Runs nightly via Task Scheduler on a management server with read access to the share. Reads all per-device JSON files, derives status groupings, and produces a single combined JSON and a flat CSV file.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Dashboard — <code>SecureBoot_CA2023_Dashboard_v4.4.html</code></h4>
+        <p>A self-contained HTML file opened locally in a browser. The combined JSON is imported via drag-and-drop or file picker. The dashboard performs the BIOS compliance table lookup live at import time &mdash; no data is baked into the JSON files.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="requirements">Requirements</h2>
+  <table>
+    <tr><th>Component</th><th>Requirement</th></tr>
+    <tr><td>Collector devices</td><td>Windows 10 1809 or later, domain-joined, PowerShell 5.1+</td></tr>
+    <tr><td>Network share</td><td>Write-only access for Domain Computers; read access for the aggregator service account</td></tr>
+    <tr><td>Aggregator host</td><td>Any Windows server or management PC with PowerShell 5.1+ and read access to the share; Task Scheduler recommended</td></tr>
+    <tr><td>Dashboard</td><td>Modern browser (Chrome, Edge, Firefox, Safari) &mdash; no installation, no backend</td></tr>
+  </table>
+
+  <div class="callout warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <div class="callout-body"><strong>Windows 10 1809 minimum</strong><p>The CA 2023 update and the associated registry keys (<code>UEFICA2023Status</code>, <code>ConfidenceLevel</code>, <code>BucketHash</code>) require the November 2025 or later Windows cumulative update. Devices that have not received this update will show <code>NO_EVENTS</code> or <code>UNKNOWN</code> status.</p></div>
+  </div>
+
+  <h2 id="share">Network share setup</h2>
+  <p>Create a dedicated share on a file server or DFS namespace that is accessible by all domain-joined devices:</p>
+  <table>
+    <tr><th>Principal</th><th>Share permission</th><th>NTFS permission</th></tr>
+    <tr><td>Domain Computers</td><td>Change</td><td>Create Files / Write Data only &mdash; no List or Read</td></tr>
+    <tr><td>Domain Admins</td><td>Full Control</td><td>Full Control</td></tr>
+    <tr><td>Service account (aggregator)</td><td>Read</td><td>Read &amp; Execute, List folder contents</td></tr>
+  </table>
+  <p>Denying <strong>List folder contents</strong> to Domain Computers prevents devices from enumerating or reading each other's JSON files.</p>
+  <p>A <code>Combined</code> subfolder within the same share can be used as the aggregator output location, giving administrators a single UNC path to manage.</p>
+
+  <h2 id="collector">Collector script</h2>
+  <p>The collector is a PowerShell 5.1 script that runs on each device and produces a JSON file containing the device's current CA 2023 status. It operates in three modes set by the <code>$OutputMode</code> variable at the top of the script.</p>
+
+  <h3 id="collector-config">Configuration</h3>
+  <table>
+    <tr><th>Variable</th><th>Default</th><th>Description</th></tr>
+    <tr><td><code>$OutputMode</code></td><td><code>Collector</code></td><td><code>Verbose</code> for human-readable output (Run Scripts / manual), <code>CI</code> for a single status token (ConfigMgr CI), <code>Collector</code> for JSON output to the share (GPO deployment)</td></tr>
+    <tr><td><code>$CollectorShare</code></td><td><em>empty</em></td><td>UNC path to the network share, e.g. <code>\\server\SecureBootCA2023$</code>. When empty in Collector mode, the JSON is written to stdout instead of a file.</td></tr>
+    <tr><td><code>$MaxEventDetail</code></td><td><code>10</code></td><td>Maximum number of events shown in Verbose mode output.</td></tr>
+  </table>
+
+  <h3 id="collector-output">Output fields</h3>
+  <p>Each device JSON contains the following fields:</p>
+  <table>
+    <tr><th>Field</th><th>Source</th><th>Description</th></tr>
+    <tr><td><code>ComputerName</code></td><td>Environment</td><td>Device hostname</td></tr>
+    <tr><td><code>CollectedAt</code></td><td>System clock</td><td>UTC timestamp of collection (ISO 8601)</td></tr>
+    <tr><td><code>Status</code></td><td>Derived</td><td>Primary status token &mdash; see <a href="#status-tokens">Status tokens</a></td></tr>
+    <tr><td><code>RegDerivedStatus</code></td><td>Registry</td><td>Status derived from <code>UEFICA2023Status</code> and <code>UEFICA2023Error</code> registry values</td></tr>
+    <tr><td><code>StatusDetail</code></td><td>Event log</td><td>Human-readable event log summary</td></tr>
+    <tr><td><code>RegStatus</code></td><td>Registry</td><td>Raw <code>UEFICA2023Status</code> value: <code>Updated</code> / <code>InProgress</code> / <code>NotStarted</code></td></tr>
+    <tr><td><code>RegError</code></td><td>Registry</td><td>Raw <code>UEFICA2023Error</code> error code (0 = no error)</td></tr>
+    <tr><td><code>RegErrorEvent</code></td><td>Registry</td><td>Event ID associated with the last registry error</td></tr>
+    <tr><td><code>ConfidenceLevel</code></td><td>Registry / Event log</td><td>Microsoft's confidence classification for this device</td></tr>
+    <tr><td><code>BucketHash</code></td><td>Registry / Event log</td><td>Telemetry bucket identifier</td></tr>
+    <tr><td><code>SkipReason</code></td><td>Event log</td><td>OEM skip reason code from Event 1802 (e.g. <code>KI_7</code>)</td></tr>
+    <tr><td><code>OSCaption</code></td><td>WMI</td><td>Operating system name, e.g. <em>Microsoft Windows 10 Enterprise</em></td></tr>
+    <tr><td><code>OSBuildNumber</code></td><td>WMI</td><td>Windows build number, e.g. <code>19045</code></td></tr>
+    <tr><td><code>SystemManufacturer</code></td><td>WMI</td><td>Device manufacturer from <code>Win32_ComputerSystem.Manufacturer</code></td></tr>
+    <tr><td><code>SystemModel</code></td><td>WMI</td><td>Device model from <code>Win32_ComputerSystem.Model</code></td></tr>
+    <tr><td><code>BIOSVersion</code></td><td>WMI</td><td>Raw BIOS version string from <code>Win32_BIOS.SMBIOSBIOSVersion</code> (may contain model prefix, e.g. <code>P01 Ver. 02.22</code>)</td></tr>
+    <tr><td><code>BIOSVersionParsed</code></td><td>WMI / derived</td><td>Extracted numeric version, e.g. <code>02.22</code></td></tr>
+    <tr><td><code>BIOSReleaseDate</code></td><td>WMI</td><td>BIOS release date in <code>yyyy-MM-dd</code> format</td></tr>
+    <tr><td><code>IsVirtualMachine</code></td><td>WMI / heuristic</td><td><code>true</code> if the device is detected as a virtual machine (VMware, Hyper-V, KVM, etc.)</td></tr>
+    <tr><td><code>SecureBootStatus</code></td><td>Registry</td><td><code>Enabled</code> / <code>Disabled</code> / <code>LegacyBIOS</code></td></tr>
+    <tr><td><code>HpSbkpfv3Present</code></td><td>WMI (HP only)</td><td>Whether the HP BIOS contains the <code>SBKPFV3</code> key in <code>Win32_ComputerSystemProduct.Version</code> (HP-specific CA 2023 BIOS marker)</td></tr>
+    <tr><td><code>EventCount</code></td><td>Event log</td><td>Total number of CA 2023 events found in the System log</td></tr>
+    <tr><td><code>LastEventId</code></td><td>Event log</td><td>ID of the most recent CA 2023 event</td></tr>
+    <tr><td><code>LastEventTime</code></td><td>Event log</td><td>UTC timestamp of the most recent event</td></tr>
+  </table>
+
+  <div class="callout info">
+    <span class="callout-icon">&#x2139;&#xFE0F;</span>
+    <div class="callout-body"><p><strong>BIOS compliance fields are not in the JSON.</strong> The dashboard computes <code>BiosReadyStatus</code>, <code>BiosUpdateRequired</code>, <code>MinBiosVersion</code>, and <code>MatchedModel</code> live from the embedded HP and Dell tables at import time. To update the compatibility tables, update the dashboard HTML &mdash; no re-collection needed.</p></div>
+  </div>
+
+  <h2 id="gpo">GPO scheduled task</h2>
+  <p>The repository includes a ready-to-use GPO XML file (<code>SecureBoot-CA2023-StatusCollector_GPO.xml</code>) that can be imported under <strong>Computer Configuration &rarr; Preferences &rarr; Control Panel Settings &rarr; Scheduled Tasks</strong> (type: <em>Scheduled Task (At least Windows 7)</em>).</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Deploy the script</h4>
+        <p>Copy <code>Get-SecureBootCA2023StatusFull_v4.0.ps1</code> to a SYSVOL scripts folder or any UNC path readable by all domain computers (e.g. <code>\\domain\NETLOGON\SecureBoot\</code>).</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Update the placeholder</h4>
+        <p>Open the GPO XML and replace the <code>*** CHANGE ME ***</code> placeholder with the full path to the script, e.g.:<br><code>powershell.exe -NonInteractive -ExecutionPolicy Bypass -File "\\domain\NETLOGON\SecureBoot\Get-SecureBootCA2023StatusFull_v4.0.ps1"</code></p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Import the XML into the GPO</h4>
+        <p>In the Group Policy Management Console, right-click the Scheduled Tasks node and select <strong>Paste</strong> after copying the XML content, or use the <em>Import&hellip;</em> option.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>Link and configure the GPO</h4>
+        <p>Link the GPO to the OUs containing the target computers. The task runs as <code>SYSTEM</code>, requires no credentials, and triggers daily at a configurable time plus on system startup. Set <code>$CollectorShare</code> in the script to your share UNC path before deployment.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="aggregator">Aggregator script</h2>
+  <p>The aggregator reads all per-device JSON files from the share and produces a combined dataset for the dashboard. It also derives additional grouping fields (<code>StatusGroup</code>, <code>ConfidenceGroup</code>, <code>Stale</code>) that the dashboard uses for filtering and statistics.</p>
+
+  <h3 id="aggregator-config">Configuration</h3>
+  <table>
+    <tr><th>Variable</th><th>Default</th><th>Description</th></tr>
+    <tr><td><code>$SourceShare</code></td><td><em>placeholder</em></td><td>UNC path to the network share containing the per-device JSON files</td></tr>
+    <tr><td><code>$OutputFolder</code></td><td><em>placeholder</em></td><td>Path where the combined JSON and CSV are written; can be a subfolder of the share</td></tr>
+    <tr><td><code>$StaleDays</code></td><td><code>7</code></td><td>Devices whose JSON is older than this many days receive <code>Stale = true</code> in the combined output</td></tr>
+  </table>
+
+  <h3 id="aggregator-output">Output files</h3>
+  <table>
+    <tr><th>File</th><th>Description</th></tr>
+    <tr><td><code>SecureBootCA2023_v4_Combined.json</code></td><td>Full dataset for dashboard import. Includes a metadata header (<code>_MergedBy</code>, <code>_GeneratedAt</code>, <code>_DeviceCount</code>, <code>_StaleCount</code>, <code>_ParseErrors</code>) and a <code>Devices</code> array.</td></tr>
+    <tr><td><code>SecureBootCA2023_v4_Combined.csv</code></td><td>Flat CSV for Excel or cross-reference. UTF-8, all device fields as columns. BIOS compliance fields are not included &mdash; use the dashboard for compliance reporting.</td></tr>
+  </table>
+
+  <div class="callout warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <div class="callout-body"><strong>BIOS compliance is not in the CSV</strong><p>The aggregator does not compute <code>BiosReadyStatus</code>. Use the dashboard for BIOS compliance reporting. The CSV contains the raw fields (<code>SystemModel</code>, <code>BIOSVersionParsed</code>) needed for a manual lookup if required.</p></div>
+  </div>
+
+  <h2 id="import">Loading data into the dashboard</h2>
+  <p>Open <code>SecureBoot_CA2023_Dashboard.html</code> locally in a browser. No web server is needed.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Obtain the combined JSON</h4>
+        <p>Run the aggregator script to produce <code>SecureBootCA2023_v4_Combined.json</code>, or copy individual device JSON files directly to a local folder for smaller batches.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Import the file</h4>
+        <p>Drag-and-drop the JSON file onto the dashboard, or click the upload area and use the file picker. Both a combined aggregator JSON (with a <code>Devices</code> array) and individual device JSON files are supported &mdash; multiple files can be loaded at once.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>BIOS compliance is computed automatically</h4>
+        <p>The dashboard looks up each device's model in the HP and Dell compatibility tables immediately on import. No additional steps are required. The result appears in the <strong>BIOS Ready</strong> column and the <strong>BIOS Compliance</strong> panel.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="panels">Summary panels</h2>
+  <p>The dashboard shows four panels above the device table:</p>
+  <table>
+    <tr><th>Panel</th><th>Content</th></tr>
+    <tr><td><strong>Summary cards</strong></td><td>Total devices, Complete, Action Required, In Progress, Unknown, Stale &mdash; each card is clickable to filter the table to that status group.</td></tr>
+    <tr><td><strong>Confidence Level</strong></td><td>Bar chart of all devices by Confidence Level value. Each row is clickable to filter the table.</td></tr>
+    <tr><td><strong>BIOS Compliance &mdash; HP &amp; Dell</strong></td><td>HP and Dell device counts with OK / Update Required / End of Life breakdown per vendor. The <em>Show BIOS action needed</em> link filters the table to devices requiring a BIOS update.</td></tr>
+    <tr><td><strong>Data source</strong></td><td>Shows the loaded file name, generation timestamp from the aggregator, device count, stale count, and parse errors.</td></tr>
+  </table>
+
+  <h2 id="filters">Filters &amp; sorting</h2>
+  <table>
+    <tr><th>Filter</th><th>Description</th></tr>
+    <tr><td>Computer name search</td><td>Case-insensitive substring match on device hostname</td></tr>
+    <tr><td>Status</td><td>Dropdown with all status tokens present in the loaded dataset</td></tr>
+    <tr><td>Confidence Level</td><td>Dropdown with all Confidence Level values present in the dataset</td></tr>
+    <tr><td>BIOS update needed</td><td>Checkbox &mdash; shows only devices where <code>BiosUpdateRequired = true</code> (HP and Dell devices below the minimum BIOS version, or End of Life)</td></tr>
+    <tr><td>Stale only</td><td>Checkbox &mdash; shows only devices whose JSON is older than <code>$StaleDays</code> (default: 7 days)</td></tr>
+  </table>
+  <p>All table columns are sortable by clicking the column header. The sort indicator shows the current direction. Clicking <strong>Clear</strong> resets all filters.</p>
+
+  <h2 id="table">Table columns</h2>
+  <table>
+    <tr><th>Column</th><th>Description</th></tr>
+    <tr><td><strong>Computer Name</strong></td><td>Device hostname. A <span class="badge badge-yellow">stale</span> pill appears if the collected JSON is older than the stale threshold.</td></tr>
+    <tr><td><strong>Collected</strong></td><td>Date the collector last ran on this device (UTC, ISO date format).</td></tr>
+    <tr><td><strong>Status</strong></td><td>Colour-coded badge with the CA 2023 status token. See <a href="#status-tokens">Status tokens</a> for the full list.</td></tr>
+    <tr><td><strong>Confidence Level</strong></td><td>Microsoft's confidence classification badge. Colour-coded: green for High Confidence, amber for Under Observation / No Data, red for Temporarily Paused / Not Supported.</td></tr>
+    <tr><td><strong>Model</strong></td><td>Device model from <code>Win32_ComputerSystem.Model</code>. Empty for devices collected with the v2.1 collector.</td></tr>
+    <tr><td><strong>BIOS Ready</strong></td><td>Result of the live BIOS compatibility table lookup. See <a href="#bios-check">BIOS compliance check</a> for values.</td></tr>
+    <tr><td><strong>Last Event</strong></td><td>ID of the most recent CA 2023 event (TPM-WMI provider). Hover or expand for the event timestamp.</td></tr>
+    <tr><td><strong>Reg Status</strong></td><td>Raw <code>UEFICA2023Status</code> registry value: <code>Updated</code> / <code>InProgress</code> / <code>NotStarted</code>.</td></tr>
+  </table>
+
+  <h2 id="detail">Row detail</h2>
+  <p>Click the <strong>&#9658;</strong> expand button on any row to open the full device detail. The detail panel is divided into five groups:</p>
+  <table>
+    <tr><th>Group</th><th>Fields</th></tr>
+    <tr><td><strong>Hardware &amp; OS</strong></td><td>OS name and build number, system manufacturer and model, virtual machine flag, Secure Boot state</td></tr>
+    <tr><td><strong>Status</strong></td><td>Status token, status group, registry-derived status, collection timestamp, stale flag, full status detail text</td></tr>
+    <tr><td><strong>Registry</strong></td><td>UEFICA2023Status, UEFICA2023Error (colour-coded), error event ID, Capable reference value, event count, last event ID and timestamp</td></tr>
+    <tr><td><strong>Confidence &amp; Bucket</strong></td><td>Confidence Level, source (Registry or EventLog), BucketHash, DeviceAttributes, UpdateType, SkipReason</td></tr>
+    <tr><td><strong>BIOS Details</strong></td><td>BIOS manufacturer, raw version string, parsed version, release date, BIOS Ready badge, minimum required version, matched table key, match method (exact / subset / fuzzy %), BIOS list source (HP/Dell), CSP vendor and version, HP device flag, HP SBKPFV3 present</td></tr>
+  </table>
+
+  <div class="callout info">
+    <span class="callout-icon">&#x2139;&#xFE0F;</span>
+    <div class="callout-body"><p>The <strong>Matched table key</strong> and <strong>Match method</strong> fields in BIOS Details show which entry in the HP or Dell table was used and how it was found (exact, subset, or fuzzy). This makes model matching transparent and auditable, especially for fuzzy matches.</p></div>
+  </div>
+
+  <h2 id="export">Export functions</h2>
+
+  <h3>&#x1F4C4; CSV export</h3>
+  <p>Exports the currently filtered view as a UTF-8 CSV. All device fields are included plus BIOS compliance fields computed by the dashboard at export time:</p>
+  <table>
+    <tr><th>Field group</th><th>Fields</th></tr>
+    <tr><td>Identity &amp; status</td><td>ComputerName, CollectedAt, Stale, Status, StatusGroup, StatusDetail, RegDerivedStatus</td></tr>
+    <tr><td>Registry</td><td>RegStatus, RegError, RegErrorEvent, RegCapable</td></tr>
+    <tr><td>Confidence</td><td>ConfidenceLevel, ConfidenceLevelSource, ConfidenceGroup, BucketHash, DeviceAttributes, UpdateType, SkipReason</td></tr>
+    <tr><td>Events</td><td>EventCount, LastEventId, LastEventTime</td></tr>
+    <tr><td>OS &amp; hardware</td><td>OSCaption, OSBuildNumber, SystemManufacturer, SystemModel</td></tr>
+    <tr><td>BIOS</td><td>BIOSManufacturer, BIOSVersion, BIOSVersionParsed, BIOSReleaseDate</td></tr>
+    <tr><td>Platform</td><td>IsVirtualMachine, SecureBootStatus</td></tr>
+    <tr><td>BIOS compliance (dashboard)</td><td>BiosReadyStatus, BiosUpdateRequired, MinBiosVersion, BiosListSource</td></tr>
+    <tr><td>HP legacy</td><td>CspVendor, CspVersion, IsHpDevice, HpSbkpfv3Present</td></tr>
+  </table>
+
+  <h3>&#x1F310; HTML report</h3>
+  <p>Generates a fully self-contained HTML file with the summary cards snapshot, a sortable device table for the currently filtered view, and the same colour-coded badges as the main dashboard. The report file can be shared and opened without the main dashboard.</p>
+
+  <h2 id="bios-check">BIOS compliance check</h2>
+  <p>The dashboard performs a live lookup of each device's model against vendor-published compatibility tables at import time. No BIOS compliance data is stored in the JSON files produced by the collector or aggregator.</p>
+
+  <table>
+    <tr><th>Value</th><th>Meaning</th></tr>
+    <tr><td><span class="badge badge-green">OK</span></td><td>Installed BIOS version meets or exceeds the minimum required version</td></tr>
+    <tr><td><span class="badge badge-red">Update Required</span></td><td>Installed BIOS is below the minimum version &mdash; update the BIOS before the CA 2023 update can proceed</td></tr>
+    <tr><td><span class="badge badge-red">End of Life</span></td><td>No BIOS update is available for this model; the CA 2023 update cannot be applied (HP only, one affected model)</td></tr>
+    <tr><td><span class="badge badge-gray">Not in List</span></td><td>Device model was not found in the HP or Dell compatibility table</td></tr>
+    <tr><td><span class="badge badge-gray">N/A</span></td><td>Device is not from HP or Dell, or is a virtual machine</td></tr>
+  </table>
+
+  <p><strong>Sources:</strong> HP &mdash; <a href="https://support.hp.com/us-en/document/ish_13070353-13070429-16">HP support document ISH_13070353</a> (April 2026). Dell &mdash; <a href="https://www.dell.com/support/kbdoc/en-us/000347876">Dell KB 000347876</a> (April 2026).</p>
+
+  <div class="callout info">
+    <span class="callout-icon">&#x2139;&#xFE0F;</span>
+    <div class="callout-body"><p>To update the compatibility tables, edit the <code>DELL_BIOS_TABLE</code> and <code>HP_BIOS_TABLE</code> JavaScript constants in the dashboard HTML. No re-collection or re-aggregation is needed &mdash; all historical JSON files are instantly re-evaluated against the new tables on next import.</p></div>
+  </div>
+
+  <h3 id="model-matching">Model matching</h3>
+  <p>Device model strings from WMI (<code>Win32_ComputerSystem.Model</code>) can differ from table keys due to marketing language, punctuation, and OEM configuration. The dashboard uses a three-stage matching pipeline:</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Normalisation</h4>
+        <p>Both the device model and every table key are lowercased, all non-alphanumeric characters replaced with spaces, and consecutive spaces collapsed. This makes punctuation and capitalisation irrelevant.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Stage 1 &mdash; Exact match</h4>
+        <p>The normalised device model is compared directly against every normalised table key. If a match is found, it is used immediately.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Stage 2 &mdash; Token subset</h4>
+        <p>Each table key's word tokens are checked against the device model's word tokens. If every token from the table key is present in the device model's token set, it is a match &mdash; regardless of additional words in the device string (e.g. &ldquo;Inch&rdquo;, &ldquo;Notebook PC&rdquo;, &ldquo;2-in-1&rdquo;). The longest matching key wins. A <strong>critical token guard</strong> rejects any candidate where a numeric or generation token (e.g. <code>G5</code>, <code>840</code>) in the table key is absent from the device token set &mdash; this prevents cross-generation false matches such as G3 matching G5.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>Stage 3 &mdash; Jaccard similarity</h4>
+        <p>Jaccard word-token similarity is computed against all remaining candidates. The critical token guard is applied first, so generation-mismatched candidates are excluded before scoring. The best-scoring candidate above 60% is used. The match stage and score are recorded in the <strong>Match method</strong> field of the detail row.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3 id="version-comparison">Version comparison</h3>
+  <p>BIOS versions are compared numerically, part by part (split on <code>.</code>). Each part is cast as an integer before comparison, handling leading zeros (<code>01.10.00</code> &rarr; <code>[1, 10, 0]</code>) and differing part counts (<code>02.67</code> vs <code>02.20.00</code>). HP BIOS version strings may carry a model prefix (<code>P01 Ver. 02.22</code>); the extractor picks out the first <code>digit.digit</code> sequence.</p>
+
+  <h2 id="status-tokens">Status tokens</h2>
+  <table>
+    <tr><th>Token</th><th>Group</th><th>Meaning</th></tr>
+    <tr><td><code>COMPLETE</code></td><td><span class="badge badge-green">Compliant</span></td><td>UEFICA2023Status = Updated (registry confirms fully applied)</td></tr>
+    <tr><td><code>COMPLETE_REG</code></td><td><span class="badge badge-green">Compliant</span></td><td>No events found but registry Capable value &ge; 2 (cert + boot mgr)</td></tr>
+    <tr><td><code>IN_PROGRESS</code></td><td><span class="badge badge-blue">In Progress</span></td><td>UEFICA2023Status = InProgress with no blocking error</td></tr>
+    <tr><td><code>PARTIAL_REG</code></td><td><span class="badge badge-blue">In Progress</span></td><td>No events but registry Capable = 1 (cert in DB only)</td></tr>
+    <tr><td><code>PENDING</code></td><td><span class="badge badge-blue">In Progress</span></td><td>Event log indicates a pending step</td></tr>
+    <tr><td><code>PENDING_REBOOT</code></td><td><span class="badge badge-blue">In Progress</span></td><td>Event 1800: reboot required</td></tr>
+    <tr><td><code>PENDING_FIRMWARE</code></td><td><span class="badge badge-blue">In Progress</span></td><td>Event 1801: certificates in OS not yet written to firmware</td></tr>
+    <tr><td><code>BLOCKED</code></td><td><span class="badge badge-red">Action Required</span></td><td>Generic blocked state</td></tr>
+    <tr><td><code>BLOCKED_BITLOCKER</code></td><td><span class="badge badge-red">Action Required</span></td><td>Event 1032: BitLocker would enter recovery &mdash; suspend for 2 reboots first</td></tr>
+    <tr><td><code>BLOCKED_BOOTLOADER</code></td><td><span class="badge badge-red">Action Required</span></td><td>Event 1033: vulnerable/revoked boot loader on EFI partition</td></tr>
+    <tr><td><code>BLOCKED_FIRMWARE_ISSUE</code></td><td><span class="badge badge-red">Action Required</span></td><td>Event 1802: known OEM firmware issue &mdash; see SkipReason and KB 5039942</td></tr>
+    <tr><td><code>BLOCKED_NO_KEK</code></td><td><span class="badge badge-red">Action Required</span></td><td>Event 1803: no PK-signed KEK found &mdash; contact device manufacturer</td></tr>
+    <tr><td><code>ERROR</code></td><td><span class="badge badge-red">Action Required</span></td><td>Registry or event log reports an unclassified error</td></tr>
+    <tr><td><code>ERROR_FIRMWARE</code></td><td><span class="badge badge-red">Action Required</span></td><td>Event 1795: firmware error during Secure Boot update</td></tr>
+    <tr><td><code>ERROR_UNEXPECTED</code></td><td><span class="badge badge-red">Action Required</span></td><td>Event 1796: unexpected error &mdash; Windows will retry on next restart</td></tr>
+    <tr><td><code>ERROR_DB_MISSING</code></td><td><span class="badge badge-red">Action Required</span></td><td>Event 1797: UEFI CA 2023 not yet in DB; DBX update deferred</td></tr>
+    <tr><td><code>ERROR_BOOTMGR_UNSIGNED</code></td><td><span class="badge badge-red">Action Required</span></td><td>Event 1798: boot manager not signed by CA 2023; DBX update deferred</td></tr>
+    <tr><td><code>NOT_STARTED</code></td><td><span class="badge badge-gray">Unknown</span></td><td>UEFICA2023Status = NotStarted &mdash; update has not been attempted</td></tr>
+    <tr><td><code>NO_EVENTS</code></td><td><span class="badge badge-gray">Unknown</span></td><td>No CA 2023 events in the System log and registry key absent</td></tr>
+    <tr><td><code>LOG_ACCESS_ERR</code></td><td><span class="badge badge-gray">Unknown</span></td><td>Cannot read the System event log (permission or service issue)</td></tr>
+    <tr><td><code>UNKNOWN</code></td><td><span class="badge badge-gray">Unknown</span></td><td>Status cannot be determined from available data</td></tr>
+  </table>
+
+  <h2 id="confidence">Confidence Level values</h2>
+  <p>Confidence Level is populated from the <code>ConfidenceLevel</code> registry value under <code>HKLM:\SYSTEM\CurrentControlSet\Control\SecureBoot\Servicing</code> (requires the November 2025 or later cumulative update) or from event log field extraction. Values are as documented in Microsoft KB 5016061 / KB 5068202.</p>
+  <table>
+    <tr><th>Value</th><th>Meaning</th></tr>
+    <tr><td><span class="badge badge-green">High Confidence</span></td><td>Microsoft has high confidence the device will accept the update without issues. Automatic deployment recommended.</td></tr>
+    <tr><td><span class="badge badge-yellow">Under Observation</span></td><td>Device is in a monitoring group. Deployment is cautious.</td></tr>
+    <tr><td><span class="badge badge-yellow">No Data Observed</span></td><td>Insufficient telemetry for this device or model.</td></tr>
+    <tr><td><span class="badge badge-red">Temporarily Paused</span></td><td>Deployment paused for this device due to a known issue (see SkipReason / Event 1802).</td></tr>
+    <tr><td><span class="badge badge-red">Not Supported</span></td><td>Device or configuration is not supported for this update.</td></tr>
+  </table>
+
+  <h2 id="troubleshooting">Troubleshooting</h2>
+  <table>
+    <tr><th>Problem</th><th>Cause</th><th>Solution</th></tr>
+    <tr>
+      <td>Status shows <code>NO_EVENTS</code> or <code>UNKNOWN</code> for all devices</td>
+      <td>Devices have not received the November 2025 cumulative update</td>
+      <td>Install the November 2025 or later CU; the registry keys and events only appear after this update</td>
+    </tr>
+    <tr>
+      <td><code>Reg Derived</code> or <code>UEFICA2023Error</code> shows <code>[object Object]</code></td>
+      <td>PowerShell 5.1 <code>ConvertTo-Json</code> serialised a null-like registry value as <code>{}</code></td>
+      <td>Dashboard v3.0 automatically treats <code>{}</code> as null and displays <code>&mdash;</code>. No action needed; the Status token is still computed correctly from the event log.</td>
+    </tr>
+    <tr>
+      <td>BIOS Ready shows <code>Not in List</code> for a known HP or Dell device</td>
+      <td>Model string from WMI does not match any table entry at 60% similarity or higher</td>
+      <td>Check the <strong>Matched table key</strong> and <strong>Match method</strong> fields in the row detail. If no match was found, the model string can be added to the table in the dashboard HTML as an additional key.</td>
+    </tr>
+    <tr>
+      <td>Device shows a wrong BIOS table match</td>
+      <td>Jaccard fuzzy match selected a similar but incorrect entry</td>
+      <td>The critical token guard prevents cross-generation matches (G3 &ne; G5). If a wrong match is shown, add an exact key for the device model in the dashboard HTML.</td>
+    </tr>
+    <tr>
+      <td>JSON parse error on import</td>
+      <td>Malformed or empty JSON file</td>
+      <td>Check for parse errors reported by the aggregator summary. The aggregator skips and logs files that cannot be parsed.</td>
+    </tr>
+    <tr>
+      <td>All devices show as Stale</td>
+      <td>Collector GPO not running or share path incorrect</td>
+      <td>Verify the GPO is linked and applied (<code>gpresult /r</code>). Check that <code>$CollectorShare</code> in the script matches the actual share UNC path.</td>
+    </tr>
+    <tr>
+      <td>Model column is empty for all devices</td>
+      <td>JSON files were collected with the v2.1 collector</td>
+      <td>Re-collect with the v3.0 collector. Existing v2.1 files load correctly otherwise &mdash; BIOS compliance data is simply not available without the hardware fields.</td>
+    </tr>
+    <tr>
+      <td>Share write fails for devices</td>
+      <td>Domain Computers lack Create Files permission on the share</td>
+      <td>Verify NTFS permissions: Domain Computers need <em>Create Files / Write Data</em>. Read and List should be denied to prevent enumeration.</td>
+    </tr>
+  </table>
+
+  <h2 id="changelog">Changelog</h2>
+
+  <div class="changelog-entry">
+    <span class="changelog-version">v3.0</span><span class="changelog-date">June 2026</span>
+    <ul>
+      <li>Collector: added OS fields (<code>OSCaption</code>, <code>OSBuildNumber</code>), hardware fields (<code>SystemManufacturer</code>, <code>SystemModel</code>), BIOS fields (<code>BIOSVersion</code>, <code>BIOSVersionParsed</code>, <code>BIOSReleaseDate</code>), platform fields (<code>IsVirtualMachine</code>, <code>SecureBootStatus</code>)</li>
+      <li>BIOS compliance tables (HP ~250 entries, Dell ~300 entries) moved from collector script into dashboard HTML &mdash; update tables by editing the HTML, no re-collection needed</li>
+      <li>Dashboard: BIOS compliance computed live at import via 3-stage model matching (exact &rarr; token-subset &rarr; Jaccard &ge;60%) with critical token guard to prevent cross-generation false matches</li>
+      <li>Dashboard: new <strong>Model</strong> column and <strong>BIOS Ready</strong> column (replaces HP SBKPFV3 column)</li>
+      <li>Dashboard: <strong>BIOS Compliance &mdash; HP &amp; Dell</strong> panel with per-vendor breakdown (replaces HP-only panel)</li>
+      <li>Dashboard: <strong>BIOS update needed</strong> filter (replaces HP only filter)</li>
+      <li>Dashboard: Hardware &amp; OS and BIOS Details sections added to row detail</li>
+      <li>Dashboard: <code>[object Object]</code> display bug fixed for <code>RegDerivedStatus</code> and <code>RegError</code> fields serialised as <code>{}</code> by PowerShell 5.1</li>
+      <li>Aggregator: added all v3.0 hardware fields to combined JSON and CSV; fixed v2.1 field-mapping bugs (<code>BucketId</code>&rarr;<code>BucketHash</code>, missing <code>RegDerivedStatus</code>/<code>RegErrorEvent</code>/<code>StatusDetail</code>)</li>
+    </ul>
+  </div>
+
+  <div class="changelog-entry">
+    <span class="changelog-version">v2.1</span><span class="changelog-date">May 2026</span>
+    <ul>
+      <li>Registry-primary status derivation: <code>UEFICA2023Status</code> and <code>UEFICA2023Error</code> used as primary source; event log as fallback and detail</li>
+      <li>HP SBKPFV3 check via <code>Win32_ComputerSystemProduct.Version</code></li>
+      <li>HP BIOS minimum version table added to collector</li>
+      <li>Aggregator: combined JSON with metadata header and status groupings</li>
+    </ul>
+  </div>
+
+  <div class="changelog-entry">
+    <span class="changelog-version">v2.0</span><span class="changelog-date">April 2026</span>
+    <ul>
+      <li>Full CA 2023 event log analysis (20 event IDs, TPM-WMI provider)</li>
+      <li>ConfidenceLevel and BucketHash collection</li>
+      <li>Dashboard with summary cards, confidence panel, filters, sortable table, expandable rows</li>
+      <li>CSV and HTML report export</li>
+    </ul>
+  </div>
+
+</main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('h2[id], h3[id]');
+const tocItems  = document.querySelectorAll('.toc-item');
+const observer  = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      tocItems.forEach(t => t.classList.remove('active'));
+      const active = document.querySelector('.toc-item[href="#' + e.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-10% 0px -80% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

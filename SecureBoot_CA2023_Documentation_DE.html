@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Boot CA 2023 — AD-Monitoring-Toolchain Dokumentation</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+:root {
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--bg4:#2d333b;
+  --border:#30363d;--border2:#444c56;
+  --text:#e6edf3;--muted:#7d8590;--dim:#545d68;
+  --accent:#58a6ff;
+  --green:#3fb950;--green-bg:#1a4a23;--green-border:#2ea043;
+  --red:#f85149;--red-bg:#4a1c1a;--red-border:#da3633;
+  --yellow:#d29922;--yellow-bg:#3d2e0a;
+  --orange:#e3b341;
+  --purple:#bc8cff;--purple-bg:rgba(188,140,255,.1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.75;font-size:.95rem;}
+a{color:var(--accent);text-decoration:none;}
+a:hover{text-decoration:underline;}
+code,pre{font-family:'IBM Plex Mono',monospace;}
+.layout{display:flex;min-height:100vh;}
+.toc{width:268px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);padding:28px 0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.content{flex:1;max-width:900px;padding:52px 60px;}
+.toc-logo{padding:0 24px 20px;border-bottom:1px solid var(--border);margin-bottom:16px;}
+.toc-logo-title{font-size:.85rem;font-weight:700;color:var(--text);line-height:1.3;}
+.toc-logo-sub{font-size:.72rem;color:var(--muted);margin-top:2px;}
+.toc-group-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);padding:10px 24px 4px;}
+.toc-item{display:block;padding:5px 24px;font-size:.82rem;color:var(--muted);border-left:2px solid transparent;transition:all .15s;}
+.toc-item:hover{color:var(--accent);border-color:var(--accent);background:rgba(88,166,255,.05);text-decoration:none;}
+.toc-item.active{color:var(--accent);border-color:var(--accent);background:rgba(88,166,255,.07);}
+.toc-item.sub{padding-left:38px;font-size:.79rem;}
+.toc-divider{height:1px;background:var(--border);margin:12px 24px;}
+h1{font-size:1.9rem;font-weight:700;letter-spacing:-.02em;line-height:1.25;margin-bottom:.5rem;}
+h2{font-size:1.25rem;font-weight:600;margin:3rem 0 1rem;padding-bottom:.6rem;border-bottom:1px solid var(--border);}
+h3{font-size:1rem;font-weight:600;margin:2rem 0 .6rem;color:var(--text);}
+h4{font-size:.9rem;font-weight:600;margin:1.5rem 0 .4rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+p{margin-bottom:1rem;color:#c9d1d9;}
+ul,ol{margin:.5rem 0 1rem 1.4rem;}
+li{margin-bottom:.3rem;color:#c9d1d9;}
+strong{color:var(--text);font-weight:600;}
+.intro{border-left:3px solid var(--accent);padding:.8rem 1.2rem;background:rgba(88,166,255,.06);border-radius:0 6px 6px 0;margin-bottom:2rem;}
+.intro p{margin:0;}
+.badge{display:inline-block;font-size:.72rem;font-weight:600;padding:2px 9px;border-radius:99px;margin-right:4px;vertical-align:middle;}
+.badge-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+.badge-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
+.badge-yellow{background:var(--yellow-bg);color:var(--yellow);border:1px solid #5a4106;}
+.badge-blue{background:rgba(88,166,255,.1);color:var(--accent);border:1px solid rgba(88,166,255,.3);}
+.badge-gray{background:var(--bg3);color:var(--muted);border:1px solid var(--border2);}
+.version-pill{font-size:.75rem;font-weight:600;background:rgba(88,166,255,.12);color:var(--accent);border:1px solid rgba(88,166,255,.3);border-radius:99px;padding:2px 10px;margin-left:10px;vertical-align:middle;}
+code{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:.85em;color:#ffa657;}
+pre{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.2rem 1.4rem;overflow-x:auto;margin:1rem 0 1.5rem;font-size:.82rem;line-height:1.65;}
+pre code{background:none;border:none;padding:0;font-size:inherit;color:#c9d1d9;}
+.callout{border-radius:8px;padding:.9rem 1.2rem;margin:1.2rem 0;display:flex;gap:.7rem;align-items:flex-start;}
+.callout-icon{flex-shrink:0;font-size:1rem;margin-top:.1rem;}
+.callout-body p{margin:0;font-size:.9rem;}
+.callout-body strong{display:block;margin-bottom:.2rem;}
+.callout.info{background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.25);}
+.callout.warning{background:var(--yellow-bg);border:1px solid #5a4106;}
+.callout.success{background:var(--green-bg);border:1px solid var(--green-border);}
+.callout.danger{background:var(--red-bg);border:1px solid var(--red-border);}
+table{width:100%;border-collapse:collapse;font-size:.88rem;margin:1rem 0 1.5rem;}
+th{background:var(--bg3);color:var(--muted);font-weight:600;text-align:left;padding:8px 12px;border:1px solid var(--border);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;}
+td{padding:9px 12px;border:1px solid var(--border);color:#c9d1d9;vertical-align:top;}
+tr:nth-child(even) td{background:rgba(255,255,255,.02);}
+.steps{counter-reset:step;}
+.step{display:flex;gap:1.2rem;margin-bottom:1.5rem;}
+.step-num{flex-shrink:0;width:28px;height:28px;background:rgba(88,166,255,.15);border:1px solid rgba(88,166,255,.4);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:var(--accent);margin-top:.15rem;}
+.step-body h4{margin:0 0 .3rem;font-size:.9rem;color:var(--text);text-transform:none;letter-spacing:0;}
+.step-body p{margin:0;font-size:.9rem;}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:1rem 0 1.5rem;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;}
+.stat-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem;}
+.stat-value{font-size:1.5rem;font-weight:700;}
+.stat-value.green{color:var(--green);}
+.stat-value.red{color:var(--red);}
+.stat-value.yellow{color:var(--yellow);}
+.stat-value.blue{color:var(--accent);}
+.changelog-entry{border-left:2px solid var(--border2);padding:.6rem 0 .6rem 1.2rem;margin-bottom:.8rem;}
+.changelog-version{font-weight:700;color:var(--text);font-size:.9rem;}
+.changelog-date{font-size:.78rem;color:var(--muted);margin-left:.5rem;}
+.changelog-entry ul{margin:.4rem 0 0 1rem;}
+.changelog-entry li{font-size:.87rem;margin-bottom:.15rem;}
+hr{border:none;border-top:1px solid var(--border);margin:2.5rem 0;}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="toc">
+  <div class="toc-logo">
+    <div class="toc-logo-title">Secure Boot CA 2023</div>
+    <div class="toc-logo-sub">AD-Toolchain &middot; Dokumentation v4.0</div>
+  </div>
+
+  <div class="toc-group-label">&#220;berblick</div>
+  <a class="toc-item" href="#overview">Was ist dieses Toolchain?</a>
+  <a class="toc-item" href="#architecture">Architektur</a>
+  <a class="toc-item" href="#requirements">Voraussetzungen</a>
+
+  <div class="toc-divider"></div>
+  <div class="toc-group-label">Bereitstellung</div>
+  <a class="toc-item" href="#share">Netzwerkfreigabe einrichten</a>
+  <a class="toc-item" href="#collector">Collector-Skript</a>
+  <a class="toc-item sub" href="#collector-config">Konfiguration</a>
+  <a class="toc-item sub" href="#collector-output">Ausgabefelder</a>
+  <a class="toc-item" href="#gpo">GPO-Geplante Aufgabe</a>
+  <a class="toc-item" href="#aggregator">Aggregator-Skript</a>
+  <a class="toc-item sub" href="#aggregator-config">Konfiguration</a>
+  <a class="toc-item sub" href="#aggregator-output">Ausgabedateien</a>
+
+  <div class="toc-divider"></div>
+  <div class="toc-group-label">Dashboard</div>
+  <a class="toc-item" href="#import">Daten laden</a>
+  <a class="toc-item" href="#panels">Zusammenfassungspanels</a>
+  <a class="toc-item" href="#filters">Filter &amp; Sortierung</a>
+  <a class="toc-item" href="#table">Tabellenspalten</a>
+  <a class="toc-item" href="#detail">Zeilendetail</a>
+  <a class="toc-item" href="#export">Exportfunktionen</a>
+
+  <div class="toc-divider"></div>
+  <div class="toc-group-label">Referenz</div>
+  <a class="toc-item" href="#bios-check">BIOS-Compliance-Pr&#252;fung</a>
+  <a class="toc-item sub" href="#model-matching">Modell-Matching</a>
+  <a class="toc-item sub" href="#version-comparison">Versionsvergleich</a>
+  <a class="toc-item" href="#status-tokens">Status-Token</a>
+  <a class="toc-item" href="#confidence">Confidence-Level-Werte</a>
+  <a class="toc-item" href="#troubleshooting">Fehlerbehebung</a>
+
+  <div class="toc-divider"></div>
+  <a class="toc-item" href="#changelog">Changelog</a>
+</nav>
+
+<main class="content">
+
+  <h1>Secure Boot CA 2023 <span class="version-pill">AD-Toolchain v4.0</span></h1>
+
+  <div class="intro">
+    <p>Ein dreiteiliges Toolchain zur &#220;berwachung des Windows-Secure-Boot-CA-2023-Zertifikat-Update-Status auf Active-Directory-Ger&#228;ten. Kein Intune, keine Microsoft Graph API, kein Agent &mdash; Daten werden per GPO-Skript gesammelt und in einem selbstst&#228;ndigen Browser-Dashboard visualisiert.</p>
+  </div>
+
+  <h2 id="overview">Was ist dieses Toolchain?</h2>
+  <p>Das <strong>Windows Secure Boot CA 2023</strong>-Update ersetzt veraltende Secure-Boot-Zertifikate auf Windows-Ger&#228;ten. Microsoft rollt das Update seit 2024 schrittweise aus; Ger&#228;te m&#252;ssen BIOS-Versionsvoraussetzungen erf&#252;llen, bevor das Zertifikat-Update angewendet werden kann.</p>
+  <p>Dieses Toolchain ist f&#252;r Umgebungen konzipiert, die &#252;ber <strong>Active Directory und Gruppenrichtlinien</strong> ohne Intune verwaltet werden. Es gibt Administratoren dieselbe Sichtbarkeit wie der native Intune-Secure-Boot-Status-Bericht &mdash; einschlie&#223;lich CA-2023-Rollout-Fortschritt, Registrierungsstatus, Ereignisprotokoll-Diagnose und BIOS-Bereitschaft des Herstellers.</p>
+
+  <div class="stat-row">
+    <div class="stat-card"><div class="stat-label">Komponenten</div><div class="stat-value blue">3</div></div>
+    <div class="stat-card"><div class="stat-label">Dell-Modelle in DB</div><div class="stat-value blue">~300</div></div>
+    <div class="stat-card"><div class="stat-label">HP-Modelle in DB</div><div class="stat-value blue">~250</div></div>
+    <div class="stat-card"><div class="stat-label">Status-Token</div><div class="stat-value green">20+</div></div>
+  </div>
+
+  <div class="callout info">
+    <span class="callout-icon">&#x2139;&#xFE0F;</span>
+    <div class="callout-body"><p>Alle Daten werden lokal verarbeitet. Das Dashboard funktioniert vollst&#228;ndig offline, sobald die HTML-Datei ge&#246;ffnet ist &mdash; es werden keine Daten an Server &#252;bertragen. Der Collector schreibt ausschlie&#223;lich in die konfigurierte Netzwerkfreigabe innerhalb der eigenen Umgebung.</p></div>
+  </div>
+
+  <h2 id="architecture">Architektur</h2>
+  <p>Das Toolchain besteht aus drei unabh&#228;ngig laufenden Komponenten:</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Collector &mdash; <code>Get-SecureBootCA2023StatusFull_v4.0.ps1</code></h4>
+        <p>Wird per GPO-Geplante-Aufgabe auf alle Dom&#228;nen-Ger&#228;te ausgerollt. L&#228;uft als SYSTEM und schreibt eine ger&#228;tespezifische JSON-Datei in eine zentrale Netzwerkfreigabe. Sammelt CA-2023-Registrierungsstatus, Ereignisprotokoll-Eintr&#228;ge, Betriebssystemversion sowie Hardware- und BIOS-Informationen.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Aggregator &mdash; <code>Merge-SecureBootCA2023Status_v4.0.ps1</code></h4>
+        <p>L&#228;uft n&#228;chtlich per Aufgabenplanung auf einem Verwaltungsserver mit Lesezugriff auf die Freigabe. Liest alle ger&#228;tespezifischen JSON-Dateien, leitet Statusgruppierungen ab und erstellt eine kombinierte JSON- und eine flache CSV-Datei.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Dashboard &mdash; <code>SecureBoot_CA2023_Dashboard_v4.4.html</code></h4>
+        <p>Eine selbstst&#228;ndige HTML-Datei, die lokal im Browser ge&#246;ffnet wird. Die kombinierte JSON-Datei wird per Drag-and-Drop oder Datei-Picker importiert. Das Dashboard f&#252;hrt die BIOS-Compliance-Tabellenabfrage live beim Import durch &mdash; keine Compliance-Daten werden in den JSON-Dateien gespeichert.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="requirements">Voraussetzungen</h2>
+  <table>
+    <tr><th>Komponente</th><th>Anforderung</th></tr>
+    <tr><td>Collector-Ger&#228;te</td><td>Windows 10 1809 oder h&#246;her, dom&#228;nen-gejoint, PowerShell 5.1+</td></tr>
+    <tr><td>Netzwerkfreigabe</td><td>Nur-Schreib-Zugriff f&#252;r Dom&#228;nen-Computer; Lesezugriff f&#252;r das Aggregator-Dienstkonto</td></tr>
+    <tr><td>Aggregator-Host</td><td>Beliebiger Windows-Server oder Verwaltungs-PC mit PowerShell 5.1+ und Lesezugriff auf die Freigabe; Aufgabenplanung empfohlen</td></tr>
+    <tr><td>Dashboard</td><td>Moderner Browser (Chrome, Edge, Firefox, Safari) &mdash; keine Installation, kein Backend</td></tr>
+  </table>
+
+  <div class="callout warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <div class="callout-body"><strong>Windows 10 1809 Mindestvoraussetzung</strong><p>Das CA-2023-Update und die zugeh&#246;rigen Registrierungsschl&#252;ssel (<code>UEFICA2023Status</code>, <code>ConfidenceLevel</code>, <code>BucketHash</code>) erfordern das kumulative Update vom November 2025 oder sp&#228;ter. Ger&#228;te, die dieses Update noch nicht erhalten haben, zeigen den Status <code>NO_EVENTS</code> oder <code>UNKNOWN</code>.</p></div>
+  </div>
+
+  <h2 id="share">Netzwerkfreigabe einrichten</h2>
+  <p>Eine dedizierte Freigabe auf einem Dateiserver oder DFS-Namespace einrichten, die f&#252;r alle dom&#228;nen-gejointen Ger&#228;te erreichbar ist:</p>
+  <table>
+    <tr><th>Principal</th><th>Freigabe-Berechtigung</th><th>NTFS-Berechtigung</th></tr>
+    <tr><td>Dom&#228;nen-Computer</td><td>&#196;ndern</td><td>Nur Dateien erstellen / Daten schreiben &mdash; kein Auflisten oder Lesen</td></tr>
+    <tr><td>Dom&#228;nen-Admins</td><td>Vollzugriff</td><td>Vollzugriff</td></tr>
+    <tr><td>Dienstkonto (Aggregator)</td><td>Lesen</td><td>Lesen &amp; Ausf&#252;hren, Ordnerinhalt auflisten</td></tr>
+  </table>
+  <p>Das Verweigern von <strong>Ordnerinhalt auflisten</strong> f&#252;r Dom&#228;nen-Computer verhindert, dass Ger&#228;te die JSON-Dateien anderer Ger&#228;te aufz&#228;hlen oder lesen k&#246;nnen.</p>
+  <p>Ein <code>Combined</code>-Unterordner innerhalb derselben Freigabe kann als Ausgabeort des Aggregators genutzt werden, sodass Administratoren einen einzigen UNC-Pfad verwalten.</p>
+
+  <h2 id="collector">Collector-Skript</h2>
+  <p>Der Collector ist ein PowerShell-5.1-Skript, das auf jedem Ger&#228;t l&#228;uft und eine JSON-Datei mit dem aktuellen CA-2023-Status des Ger&#228;ts erstellt. Der Betrieb erfolgt in drei Modi, die &#252;ber die Variable <code>$OutputMode</code> am Anfang des Skripts gesteuert werden.</p>
+
+  <h3 id="collector-config">Konfiguration</h3>
+  <table>
+    <tr><th>Variable</th><th>Standard</th><th>Beschreibung</th></tr>
+    <tr><td><code>$OutputMode</code></td><td><code>Collector</code></td><td><code>Verbose</code> f&#252;r menschenlesbare Ausgabe (Skripte ausf&#252;hren / manuell), <code>CI</code> f&#252;r einen einzelnen Status-Token (ConfigMgr-CI), <code>Collector</code> f&#252;r JSON-Ausgabe in die Freigabe (GPO-Bereitstellung)</td></tr>
+    <tr><td><code>$CollectorShare</code></td><td><em>leer</em></td><td>UNC-Pfad zur Netzwerkfreigabe, z.B. <code>\\server\SecureBootCA2023$</code>. Bei leerem Wert im Collector-Modus wird das JSON auf stdout ausgegeben.</td></tr>
+    <tr><td><code>$MaxEventDetail</code></td><td><code>10</code></td><td>Maximale Anzahl angezeigter Ereignisse im Verbose-Modus.</td></tr>
+  </table>
+
+  <h3 id="collector-output">Ausgabefelder</h3>
+  <p>Jede Ger&#228;te-JSON enth&#228;lt folgende Felder:</p>
+  <table>
+    <tr><th>Feld</th><th>Quelle</th><th>Beschreibung</th></tr>
+    <tr><td><code>ComputerName</code></td><td>Umgebung</td><td>Hostname des Ger&#228;ts</td></tr>
+    <tr><td><code>CollectedAt</code></td><td>Systemuhr</td><td>UTC-Zeitstempel der Erfassung (ISO 8601)</td></tr>
+    <tr><td><code>Status</code></td><td>Abgeleitet</td><td>Prim&#228;rer Status-Token &mdash; siehe <a href="#status-tokens">Status-Token</a></td></tr>
+    <tr><td><code>RegDerivedStatus</code></td><td>Registrierung</td><td>Aus <code>UEFICA2023Status</code> und <code>UEFICA2023Error</code> abgeleiteter Status</td></tr>
+    <tr><td><code>StatusDetail</code></td><td>Ereignisprotokoll</td><td>Menschenlesbare Zusammenfassung des Ereignisprotokolls</td></tr>
+    <tr><td><code>RegStatus</code></td><td>Registrierung</td><td>Rohwert <code>UEFICA2023Status</code>: <code>Updated</code> / <code>InProgress</code> / <code>NotStarted</code></td></tr>
+    <tr><td><code>RegError</code></td><td>Registrierung</td><td>Fehlercode <code>UEFICA2023Error</code> (0 = kein Fehler)</td></tr>
+    <tr><td><code>RegErrorEvent</code></td><td>Registrierung</td><td>Ereignis-ID zum letzten Registrierungsfehler</td></tr>
+    <tr><td><code>ConfidenceLevel</code></td><td>Registrierung / Ereignisprotokoll</td><td>Microsofts Konfidenzklassifizierung f&#252;r dieses Ger&#228;t</td></tr>
+    <tr><td><code>BucketHash</code></td><td>Registrierung / Ereignisprotokoll</td><td>Telemetrie-Bucket-Bezeichner</td></tr>
+    <tr><td><code>SkipReason</code></td><td>Ereignisprotokoll</td><td>OEM-Skip-Reason-Code aus Ereignis 1802 (z.B. <code>KI_7</code>)</td></tr>
+    <tr><td><code>OSCaption</code></td><td>WMI</td><td>Betriebssystemname, z.B. <em>Microsoft Windows 10 Enterprise</em></td></tr>
+    <tr><td><code>OSBuildNumber</code></td><td>WMI</td><td>Windows-Build-Nummer, z.B. <code>19045</code></td></tr>
+    <tr><td><code>SystemManufacturer</code></td><td>WMI</td><td>Ger&#228;tehersteller aus <code>Win32_ComputerSystem.Manufacturer</code></td></tr>
+    <tr><td><code>SystemModel</code></td><td>WMI</td><td>Ger&#228;temodell aus <code>Win32_ComputerSystem.Model</code></td></tr>
+    <tr><td><code>BIOSVersion</code></td><td>WMI</td><td>Roh-BIOS-Versionsstring aus <code>Win32_BIOS.SMBIOSBIOSVersion</code> (kann Modell-Pr&#228;fix enthalten, z.B. <code>P01 Ver. 02.22</code>)</td></tr>
+    <tr><td><code>BIOSVersionParsed</code></td><td>WMI / abgeleitet</td><td>Extrahierte numerische Version, z.B. <code>02.22</code></td></tr>
+    <tr><td><code>BIOSReleaseDate</code></td><td>WMI</td><td>BIOS-Erscheinungsdatum im Format <code>yyyy-MM-dd</code></td></tr>
+    <tr><td><code>IsVirtualMachine</code></td><td>WMI / Heuristik</td><td><code>true</code>, wenn das Ger&#228;t als virtuelle Maschine erkannt wird (VMware, Hyper-V, KVM usw.)</td></tr>
+    <tr><td><code>SecureBootStatus</code></td><td>Registrierung</td><td><code>Enabled</code> / <code>Disabled</code> / <code>LegacyBIOS</code></td></tr>
+    <tr><td><code>HpSbkpfv3Present</code></td><td>WMI (nur HP)</td><td>Ob das HP-BIOS den <code>SBKPFV3</code>-Schl&#252;ssel in <code>Win32_ComputerSystemProduct.Version</code> enth&#228;lt (HP-spezifischer CA-2023-BIOS-Marker)</td></tr>
+    <tr><td><code>EventCount</code></td><td>Ereignisprotokoll</td><td>Gesamtzahl der CA-2023-Ereignisse im Systemprotokoll</td></tr>
+    <tr><td><code>LastEventId</code></td><td>Ereignisprotokoll</td><td>ID des letzten CA-2023-Ereignisses</td></tr>
+    <tr><td><code>LastEventTime</code></td><td>Ereignisprotokoll</td><td>UTC-Zeitstempel des letzten Ereignisses</td></tr>
+  </table>
+
+  <div class="callout info">
+    <span class="callout-icon">&#x2139;&#xFE0F;</span>
+    <div class="callout-body"><p><strong>BIOS-Compliance-Felder sind nicht in der JSON.</strong> Das Dashboard berechnet <code>BiosReadyStatus</code>, <code>BiosUpdateRequired</code>, <code>MinBiosVersion</code> und <code>MatchedModel</code> live aus den eingebetteten HP- und Dell-Tabellen beim Import. Um die Kompatibilit&#228;tstabellen zu aktualisieren, gen&#252;gt eine &#196;nderung im Dashboard-HTML &mdash; kein erneutes Erfassen notwendig.</p></div>
+  </div>
+
+  <h2 id="gpo">GPO-Geplante Aufgabe</h2>
+  <p>Das Repository enth&#228;lt eine fertige GPO-XML-Datei (<code>SecureBoot-CA2023-StatusCollector_GPO.xml</code>), die unter <strong>Computerkonfiguration &rarr; Einstellungen &rarr; Systemsteuerungseinstellungen &rarr; Geplante Aufgaben</strong> (Typ: <em>Geplante Aufgabe (Mindestens Windows 7)</em>) importiert werden kann.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Skript bereitstellen</h4>
+        <p><code>Get-SecureBootCA2023StatusFull_v4.0.ps1</code> in einen SYSVOL-Skriptordner oder einen beliebigen UNC-Pfad kopieren, der f&#252;r alle Dom&#228;nen-Computer lesbar ist (z.B. <code>\\domain\NETLOGON\SecureBoot\</code>).</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Platzhalter ersetzen</h4>
+        <p>GPO-XML &#246;ffnen und den Platzhalter <code>*** CHANGE ME ***</code> durch den vollst&#228;ndigen Pfad zum Skript ersetzen, z.B.:<br><code>powershell.exe -NonInteractive -ExecutionPolicy Bypass -File "\\domain\NETLOGON\SecureBoot\Get-SecureBootCA2023StatusFull_v4.0.ps1"</code></p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>XML in das GPO importieren</h4>
+        <p>In der Gruppenrichtlinienverwaltungskonsole im Knoten &laquo;Geplante Aufgaben&raquo; rechtsklicken und <strong>Einf&#252;gen</strong> w&#228;hlen, oder die Option <em>Importieren&hellip;</em> verwenden.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>GPO verkn&#252;pfen und konfigurieren</h4>
+        <p>GPO mit den OUs der Zielcomputer verkn&#252;pfen. Die Aufgabe l&#228;uft als <code>SYSTEM</code>, ben&#246;tigt keine Anmeldeinformationen und wird t&#228;glich sowie beim Systemstart ausgel&#246;st. Vor dem Ausrollen <code>$CollectorShare</code> im Skript auf den UNC-Pfad der Freigabe setzen.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="aggregator">Aggregator-Skript</h2>
+  <p>Der Aggregator liest alle ger&#228;tespezifischen JSON-Dateien aus der Freigabe und erstellt einen kombinierten Datensatz f&#252;r das Dashboard. Zus&#228;tzlich werden Gruppenfelder (<code>StatusGroup</code>, <code>ConfidenceGroup</code>, <code>Stale</code>) abgeleitet, die das Dashboard f&#252;r Filter und Statistiken verwendet.</p>
+
+  <h3 id="aggregator-config">Konfiguration</h3>
+  <table>
+    <tr><th>Variable</th><th>Standard</th><th>Beschreibung</th></tr>
+    <tr><td><code>$SourceShare</code></td><td><em>Platzhalter</em></td><td>UNC-Pfad zur Netzwerkfreigabe mit den ger&#228;tespezifischen JSON-Dateien</td></tr>
+    <tr><td><code>$OutputFolder</code></td><td><em>Platzhalter</em></td><td>Pfad, in den kombinierte JSON und CSV geschrieben werden; kann ein Unterordner der Freigabe sein</td></tr>
+    <tr><td><code>$StaleDays</code></td><td><code>7</code></td><td>Ger&#228;te, deren JSON &#228;lter als diese Anzahl Tage ist, erhalten <code>Stale = true</code> in der kombinierten Ausgabe</td></tr>
+  </table>
+
+  <h3 id="aggregator-output">Ausgabedateien</h3>
+  <table>
+    <tr><th>Datei</th><th>Beschreibung</th></tr>
+    <tr><td><code>SecureBootCA2023_v4_Combined.json</code></td><td>Vollst&#228;ndiger Datensatz f&#252;r den Dashboard-Import. Enth&#228;lt einen Metadaten-Header (<code>_MergedBy</code>, <code>_GeneratedAt</code>, <code>_DeviceCount</code>, <code>_StaleCount</code>, <code>_ParseErrors</code>) und ein <code>Devices</code>-Array.</td></tr>
+    <tr><td><code>SecureBootCA2023_v4_Combined.csv</code></td><td>Flache CSV f&#252;r Excel oder Querverweise. UTF-8, alle Ger&#228;tefelder als Spalten. BIOS-Compliance-Felder sind nicht enthalten &mdash; das Dashboard f&#252;r Compliance-Reporting verwenden.</td></tr>
+  </table>
+
+  <div class="callout warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <div class="callout-body"><strong>BIOS-Compliance ist nicht in der CSV</strong><p>Der Aggregator berechnet <code>BiosReadyStatus</code> nicht. F&#252;r BIOS-Compliance-Reporting das Dashboard verwenden. Die CSV enth&#228;lt die Rohfelder (<code>SystemModel</code>, <code>BIOSVersionParsed</code>) f&#252;r eine manuelle Abfrage bei Bedarf.</p></div>
+  </div>
+
+  <h2 id="import">Daten ins Dashboard laden</h2>
+  <p><code>SecureBoot_CA2023_Dashboard_v4.4.html</code> lokal im Browser &#246;ffnen. Kein Webserver erforderlich.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Kombinierte JSON abrufen</h4>
+        <p>Aggregator-Skript ausf&#252;hren, um <code>SecureBootCA2023_v4_Combined.json</code> zu erstellen, oder einzelne Ger&#228;te-JSON-Dateien f&#252;r kleinere Batches in einen lokalen Ordner kopieren.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Datei importieren</h4>
+        <p>JSON-Datei per Drag-and-Drop ins Dashboard ziehen oder auf den Upload-Bereich klicken und den Datei-Picker verwenden. Sowohl kombinierte Aggregator-JSON (mit <code>Devices</code>-Array) als auch einzelne Ger&#228;te-JSON-Dateien werden unterst&#252;tzt &mdash; mehrere Dateien k&#246;nnen gleichzeitig geladen werden.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>BIOS-Compliance wird automatisch berechnet</h4>
+        <p>Das Dashboard schl&#228;gt das Modell jedes Ger&#228;ts sofort beim Import in den HP- und Dell-Kompatibilit&#228;tstabellen nach. Keine weiteren Schritte erforderlich. Das Ergebnis erscheint in der Spalte <strong>BIOS Ready</strong> und im Panel <strong>BIOS Compliance</strong>.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="panels">Zusammenfassungspanels</h2>
+  <table>
+    <tr><th>Panel</th><th>Inhalt</th></tr>
+    <tr><td><strong>Zusammenfassungskarten</strong></td><td>Ger&#228;te gesamt, Abgeschlossen, Ma&#223;nahme erforderlich, In Bearbeitung, Unbekannt, Veraltet &mdash; jede Karte ist anklickbar und filtert die Tabelle auf diese Statusgruppe.</td></tr>
+    <tr><td><strong>Confidence Level</strong></td><td>Balkendiagramm aller Ger&#228;te nach Confidence-Level-Wert. Jede Zeile ist anklickbar zum Filtern der Tabelle.</td></tr>
+    <tr><td><strong>BIOS Compliance &mdash; HP &amp; Dell</strong></td><td>HP- und Dell-Ger&#228;tezahlen mit OK / Update erforderlich / End-of-Life-Aufschl&#252;sselung pro Hersteller. Der Link &laquo;BIOS-Handlungsbedarf anzeigen&raquo; filtert die Tabelle auf Ger&#228;te mit BIOS-Update-Bedarf.</td></tr>
+    <tr><td><strong>Datenquelle</strong></td><td>Zeigt den geladenen Dateinamen, den Generierungszeitstempel des Aggregators, Ger&#228;teanzahl, veraltete Ger&#228;te und Parse-Fehler.</td></tr>
+  </table>
+
+  <h2 id="filters">Filter &amp; Sortierung</h2>
+  <table>
+    <tr><th>Filter</th><th>Beschreibung</th></tr>
+    <tr><td>Computername-Suche</td><td>Gro&#223;-/Kleinschreibungsunabh&#228;ngige Teilstring-Suche im Hostnamen</td></tr>
+    <tr><td>Status</td><td>Dropdown mit allen Status-Token im geladenen Datensatz</td></tr>
+    <tr><td>Confidence Level</td><td>Dropdown mit allen Confidence-Level-Werten im Datensatz</td></tr>
+    <tr><td>BIOS-Update erforderlich</td><td>Checkbox &mdash; zeigt nur Ger&#228;te, bei denen <code>BiosUpdateRequired = true</code> (HP- und Dell-Ger&#228;te unter der BIOS-Mindestversion oder End of Life)</td></tr>
+    <tr><td>Nur veraltete</td><td>Checkbox &mdash; zeigt nur Ger&#228;te, deren JSON &#228;lter als <code>$StaleDays</code> ist (Standard: 7 Tage)</td></tr>
+  </table>
+  <p>Alle Tabellenspalten sind durch Klick auf den Spaltenkopf sortierbar. Die Sortierrichtung wird angezeigt. <strong>Zur&#252;cksetzen</strong> setzt alle Filter zur&#252;ck.</p>
+
+  <h2 id="table">Tabellenspalten</h2>
+  <table>
+    <tr><th>Spalte</th><th>Beschreibung</th></tr>
+    <tr><td><strong>Computername</strong></td><td>Hostname des Ger&#228;ts. Ein <span class="badge badge-yellow">veraltet</span>-Pill erscheint, wenn die JSON &#228;lter als der Stale-Schwellwert ist.</td></tr>
+    <tr><td><strong>Erfasst</strong></td><td>Datum der letzten Collector-Ausf&#252;hrung auf diesem Ger&#228;t (UTC, ISO-Datumsformat).</td></tr>
+    <tr><td><strong>Status</strong></td><td>Farbiges Badge mit dem CA-2023-Status-Token. Vollst&#228;ndige Liste unter <a href="#status-tokens">Status-Token</a>.</td></tr>
+    <tr><td><strong>Confidence Level</strong></td><td>Microsofts Konfidenzklassifizierungs-Badge. Farbkodiert: gr&#252;n f&#252;r High Confidence, amber f&#252;r Under Observation / No Data, rot f&#252;r Temporarily Paused / Not Supported.</td></tr>
+    <tr><td><strong>Modell</strong></td><td>Ger&#228;temodell aus <code>Win32_ComputerSystem.Model</code>. Leer f&#252;r Ger&#228;te, die mit dem v2.1-Collector erfasst wurden.</td></tr>
+    <tr><td><strong>BIOS Ready</strong></td><td>Ergebnis der live BIOS-Kompatibilit&#228;tstabellenabfrage. Werte siehe <a href="#bios-check">BIOS-Compliance-Pr&#252;fung</a>.</td></tr>
+    <tr><td><strong>Letztes Ereignis</strong></td><td>ID des aktuellsten CA-2023-Ereignisses (TPM-WMI-Provider).</td></tr>
+    <tr><td><strong>Reg-Status</strong></td><td>Rohwert <code>UEFICA2023Status</code>: <code>Updated</code> / <code>InProgress</code> / <code>NotStarted</code>.</td></tr>
+  </table>
+
+  <h2 id="detail">Zeilendetail</h2>
+  <p>Auf die Schaltfl&#228;che <strong>&#9658;</strong> in einer Zeile klicken, um das vollst&#228;ndige Ger&#228;tedetail zu &#246;ffnen. Das Detailpanel ist in f&#252;nf Gruppen unterteilt:</p>
+  <table>
+    <tr><th>Gruppe</th><th>Felder</th></tr>
+    <tr><td><strong>Hardware &amp; OS</strong></td><td>Betriebssystemname und Build-Nummer, Systemhersteller und -modell, VM-Flag, Secure-Boot-Status</td></tr>
+    <tr><td><strong>Status</strong></td><td>Status-Token, Statusgruppe, aus Registrierung abgeleiteter Status, Erfassungszeitstempel, Stale-Flag, vollst&#228;ndiger Statusdetailtext</td></tr>
+    <tr><td><strong>Registrierung</strong></td><td>UEFICA2023Status, UEFICA2023Error (farbkodiert), Fehler-Ereignis-ID, Capable-Referenzwert, Ereignisanzahl, letzte Ereignis-ID und -zeitstempel</td></tr>
+    <tr><td><strong>Confidence &amp; Bucket</strong></td><td>Confidence Level, Quelle (Registrierung oder Ereignisprotokoll), BucketHash, DeviceAttributes, UpdateType, SkipReason</td></tr>
+    <tr><td><strong>BIOS-Details</strong></td><td>BIOS-Hersteller, Roh-Versionsstring, geparste Version, Erscheinungsdatum, BIOS-Ready-Badge, Mindestversion, gematchter Tabelleneintrag, Match-Methode (exakt / Teilmenge / Fuzzy %), BIOS-Listenquelle (HP/Dell), CSP-Vendor und -Version, HP-Ger&#228;te-Flag, HP-SBKPFV3-vorhanden</td></tr>
+  </table>
+
+  <h2 id="export">Exportfunktionen</h2>
+
+  <h3>&#x1F4C4; CSV-Export</h3>
+  <p>Exportiert die aktuell gefilterte Ansicht als UTF-8-CSV. Alle Ger&#228;tefelder sind enthalten, zus&#228;tzlich die vom Dashboard beim Export berechneten BIOS-Compliance-Felder.</p>
+
+  <h3>&#x1F310; HTML-Bericht</h3>
+  <p>Erstellt eine vollst&#228;ndig eigenst&#228;ndige HTML-Datei mit einem Snapshot der Zusammenfassungskarten, einer sortierbaren Ger&#228;tetabelle der aktuell gefilterten Ansicht und denselben farbkodierten Badges wie das Haupt-Dashboard. Die Berichtsdatei kann weitergegeben und ohne das Haupt-Dashboard ge&#246;ffnet werden.</p>
+
+  <h2 id="bios-check">BIOS-Compliance-Pr&#252;fung</h2>
+  <p>Das Dashboard f&#252;hrt beim Import eine Live-Abfrage des Ger&#228;temodells gegen herstellerver&#246;ffentlichte Kompatibilit&#228;tstabellen durch. In den vom Collector oder Aggregator erzeugten JSON-Dateien werden keine BIOS-Compliance-Daten gespeichert.</p>
+
+  <table>
+    <tr><th>Wert</th><th>Bedeutung</th></tr>
+    <tr><td><span class="badge badge-green">OK</span></td><td>Installierte BIOS-Version erf&#252;llt oder &#252;berschreitet die Mindestversion</td></tr>
+    <tr><td><span class="badge badge-red">Update Required</span></td><td>Installiertes BIOS liegt unter der Mindestversion &mdash; BIOS aktualisieren, bevor das CA-2023-Update angewendet werden kann</td></tr>
+    <tr><td><span class="badge badge-red">End of Life</span></td><td>Kein BIOS-Update f&#252;r dieses Modell verf&#252;gbar; das CA-2023-Update kann nicht angewendet werden (nur HP, ein betroffenes Modell)</td></tr>
+    <tr><td><span class="badge badge-gray">Not in List</span></td><td>Ger&#228;temodell wurde in der HP- oder Dell-Kompatibilit&#228;tstabelle nicht gefunden</td></tr>
+    <tr><td><span class="badge badge-gray">N/A</span></td><td>Ger&#228;t ist nicht von HP oder Dell, oder ist eine virtuelle Maschine</td></tr>
+  </table>
+
+  <p><strong>Quellen:</strong> HP &mdash; <a href="https://support.hp.com/us-en/document/ish_13070353-13070429-16">HP-Supportdokument ISH_13070353</a> (April 2026). Dell &mdash; <a href="https://www.dell.com/support/kbdoc/en-us/000347876">Dell KB 000347876</a> (April 2026).</p>
+
+  <div class="callout info">
+    <span class="callout-icon">&#x2139;&#xFE0F;</span>
+    <div class="callout-body"><p>Um die Kompatibilit&#228;tstabellen zu aktualisieren, die JavaScript-Konstanten <code>DELL_BIOS_TABLE</code> und <code>HP_BIOS_TABLE</code> im Dashboard-HTML bearbeiten. Keine erneute Erfassung oder Aggregation erforderlich &mdash; alle historischen JSON-Dateien werden beim n&#228;chsten Import sofort gegen die neuen Tabellen ausgewertet.</p></div>
+  </div>
+
+  <h3 id="model-matching">Modell-Matching</h3>
+  <p>Modell-Strings aus WMI (<code>Win32_ComputerSystem.Model</code>) k&#246;nnen von den Tabellenschl&#252;sseln aufgrund von Marketingsprache, Satzzeichen und OEM-Konfiguration abweichen. Das Dashboard verwendet eine dreistufige Matching-Pipeline:</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Normalisierung</h4>
+        <p>Sowohl das Ger&#228;temodell als auch jeder Tabellenschl&#252;ssel werden in Kleinbuchstaben umgewandelt, alle nicht-alphanumerischen Zeichen durch Leerzeichen ersetzt und aufeinanderfolgende Leerzeichen zusammengef&#252;hrt. Dadurch werden Satzzeichen und Gro&#223;-/Kleinschreibung irrelevant.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Stufe 1 &mdash; Exakter Treffer</h4>
+        <p>Das normalisierte Ger&#228;temodell wird direkt mit jedem normalisierten Tabellenschl&#252;ssel verglichen. Bei einem Treffer wird dieser sofort verwendet.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Stufe 2 &mdash; Token-Teilmenge</h4>
+        <p>Die Worttokens jedes Tabellenschl&#252;ssels werden gegen die Worttokens des Ger&#228;temodells gepr&#252;ft. Wenn jedes Token des Tabellenschl&#252;ssels im Token-Set des Ger&#228;temodells vorhanden ist, gilt es als Treffer &mdash; unabh&#228;ngig von zus&#228;tzlichen W&#246;rtern im Ger&#228;te-String (z.B. &laquo;Inch&raquo;, &laquo;Notebook PC&raquo;, &laquo;2-in-1&raquo;). Der l&#228;ngste passende Schl&#252;ssel gewinnt. Ein <strong>kritischer Token-Guard</strong> verwirft Kandidaten, bei denen ein numerisches oder Generations-Token (z.B. <code>G5</code>, <code>840</code>) im Tabellenschl&#252;ssel nicht im Ger&#228;te-Token-Set vorhanden ist &mdash; verhindert generationsbedingte Fehltreffer wie G3 auf G5.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>Stufe 3 &mdash; Jaccard-&#196;hnlichkeit</h4>
+        <p>Jaccard-Wort-Token-&#196;hnlichkeit wird gegen alle verbleibenden Kandidaten berechnet. Der kritische Token-Guard wird zuerst angewendet, sodass Kandidaten mit Generations-Mismatch vor der Bewertung ausgeschlossen werden. Der best-bewertete Kandidat &#252;ber 60% wird verwendet. Match-Stufe und Score werden im Feld <strong>Match-Methode</strong> des Detailbereichs festgehalten.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3 id="version-comparison">Versionsvergleich</h3>
+  <p>BIOS-Versionen werden numerisch, Teil f&#252;r Teil (aufgeteilt an <code>.</code>) verglichen. Jeder Teil wird vor dem Vergleich als Integer umgewandelt, was f&#252;hrende Nullen (<code>01.10.00</code> &rarr; <code>[1, 10, 0]</code>) und unterschiedliche Teilanzahlen (<code>02.67</code> vs. <code>02.20.00</code>) korrekt behandelt. HP-BIOS-Versionsstrings k&#246;nnen einen Modell-Pr&#228;fix enthalten (<code>P01 Ver. 02.22</code>); der Extraktor w&#228;hlt die erste <code>Ziffer.Ziffer</code>-Sequenz.</p>
+
+  <h2 id="status-tokens">Status-Token</h2>
+  <table>
+    <tr><th>Token</th><th>Gruppe</th><th>Bedeutung</th></tr>
+    <tr><td><code>COMPLETE</code></td><td><span class="badge badge-green">Compliant</span></td><td>UEFICA2023Status = Updated (Registrierung best&#228;tigt vollst&#228;ndige Anwendung)</td></tr>
+    <tr><td><code>COMPLETE_REG</code></td><td><span class="badge badge-green">Compliant</span></td><td>Keine Ereignisse, aber Registrierung Capable-Wert &ge; 2 (Zertifikat + Boot-Manager)</td></tr>
+    <tr><td><code>IN_PROGRESS</code></td><td><span class="badge badge-blue">In Progress</span></td><td>UEFICA2023Status = InProgress ohne blockierenden Fehler</td></tr>
+    <tr><td><code>PARTIAL_REG</code></td><td><span class="badge badge-blue">In Progress</span></td><td>Keine Ereignisse, aber Capable = 1 (nur Zertifikat in DB)</td></tr>
+    <tr><td><code>PENDING</code></td><td><span class="badge badge-blue">In Progress</span></td><td>Ereignisprotokoll zeigt ausstehenden Schritt an</td></tr>
+    <tr><td><code>PENDING_REBOOT</code></td><td><span class="badge badge-blue">In Progress</span></td><td>Ereignis 1800: Neustart erforderlich</td></tr>
+    <tr><td><code>PENDING_FIRMWARE</code></td><td><span class="badge badge-blue">In Progress</span></td><td>Ereignis 1801: Zertifikate im OS noch nicht in Firmware geschrieben</td></tr>
+    <tr><td><code>BLOCKED</code></td><td><span class="badge badge-red">Action Required</span></td><td>Allgemeiner Blocked-Zustand</td></tr>
+    <tr><td><code>BLOCKED_BITLOCKER</code></td><td><span class="badge badge-red">Action Required</span></td><td>Ereignis 1032: BitLocker w&#252;rde in Recovery wechseln &mdash; zuerst f&#252;r 2 Neustarts suspendieren</td></tr>
+    <tr><td><code>BLOCKED_BOOTLOADER</code></td><td><span class="badge badge-red">Action Required</span></td><td>Ereignis 1033: anf&#228;lliger/widerrufener Boot-Loader auf EFI-Partition</td></tr>
+    <tr><td><code>BLOCKED_FIRMWARE_ISSUE</code></td><td><span class="badge badge-red">Action Required</span></td><td>Ereignis 1802: bekanntes OEM-Firmware-Problem &mdash; siehe SkipReason und KB 5039942</td></tr>
+    <tr><td><code>BLOCKED_NO_KEK</code></td><td><span class="badge badge-red">Action Required</span></td><td>Ereignis 1803: kein PK-signierter KEK gefunden &mdash; Ger&#228;tehersteller kontaktieren</td></tr>
+    <tr><td><code>ERROR</code></td><td><span class="badge badge-red">Action Required</span></td><td>Registrierung oder Ereignisprotokoll meldet nicht klassifizierten Fehler</td></tr>
+    <tr><td><code>ERROR_FIRMWARE</code></td><td><span class="badge badge-red">Action Required</span></td><td>Ereignis 1795: Firmware-Fehler beim Secure-Boot-Update</td></tr>
+    <tr><td><code>ERROR_UNEXPECTED</code></td><td><span class="badge badge-red">Action Required</span></td><td>Ereignis 1796: unerwarteter Fehler &mdash; Windows wiederholt beim n&#228;chsten Neustart</td></tr>
+    <tr><td><code>ERROR_DB_MISSING</code></td><td><span class="badge badge-red">Action Required</span></td><td>Ereignis 1797: UEFI CA 2023 noch nicht in DB; DBX-Update aufgeschoben</td></tr>
+    <tr><td><code>ERROR_BOOTMGR_UNSIGNED</code></td><td><span class="badge badge-red">Action Required</span></td><td>Ereignis 1798: Boot-Manager nicht von CA 2023 signiert; DBX-Update aufgeschoben</td></tr>
+    <tr><td><code>NOT_STARTED</code></td><td><span class="badge badge-gray">Unknown</span></td><td>UEFICA2023Status = NotStarted &mdash; Update wurde noch nicht versucht</td></tr>
+    <tr><td><code>NO_EVENTS</code></td><td><span class="badge badge-gray">Unknown</span></td><td>Keine CA-2023-Ereignisse im Systemprotokoll und Registrierungsschl&#252;ssel fehlt</td></tr>
+    <tr><td><code>LOG_ACCESS_ERR</code></td><td><span class="badge badge-gray">Unknown</span></td><td>Systemereignisprotokoll nicht lesbar (Berechtigungs- oder Dienstproblem)</td></tr>
+    <tr><td><code>UNKNOWN</code></td><td><span class="badge badge-gray">Unknown</span></td><td>Status aus verf&#252;gbaren Daten nicht bestimmbar</td></tr>
+  </table>
+
+  <h2 id="confidence">Confidence-Level-Werte</h2>
+  <p>Der Confidence Level wird aus dem Registrierungswert <code>ConfidenceLevel</code> unter <code>HKLM:\SYSTEM\CurrentControlSet\Control\SecureBoot\Servicing</code> (erfordert das kumulative Update vom November 2025 oder sp&#228;ter) oder aus der Ereignisprotokoll-Feldextraktion bef&#252;llt. Werte wie in Microsoft KB 5016061 / KB 5068202 dokumentiert.</p>
+  <table>
+    <tr><th>Wert</th><th>Bedeutung</th></tr>
+    <tr><td><span class="badge badge-green">High Confidence</span></td><td>Microsoft hat hohes Vertrauen, dass das Ger&#228;t das Update ohne Probleme akzeptiert. Automatische Bereitstellung empfohlen.</td></tr>
+    <tr><td><span class="badge badge-yellow">Under Observation</span></td><td>Ger&#228;t befindet sich in einer Beobachtungsgruppe. Vorsichtige Bereitstellung.</td></tr>
+    <tr><td><span class="badge badge-yellow">No Data Observed</span></td><td>Unzureichende Telemetrie f&#252;r dieses Ger&#228;t oder Modell.</td></tr>
+    <tr><td><span class="badge badge-red">Temporarily Paused</span></td><td>Bereitstellung f&#252;r dieses Ger&#228;t aufgrund eines bekannten Problems pausiert (siehe SkipReason / Ereignis 1802).</td></tr>
+    <tr><td><span class="badge badge-red">Not Supported</span></td><td>Ger&#228;t oder Konfiguration wird f&#252;r dieses Update nicht unterst&#252;tzt.</td></tr>
+  </table>
+
+  <h2 id="troubleshooting">Fehlerbehebung</h2>
+  <table>
+    <tr><th>Problem</th><th>Ursache</th><th>L&#246;sung</th></tr>
+    <tr>
+      <td>Status zeigt <code>NO_EVENTS</code> oder <code>UNKNOWN</code> f&#252;r alle Ger&#228;te</td>
+      <td>Ger&#228;te haben das kumulative Update vom November 2025 noch nicht erhalten</td>
+      <td>November-2025-CU oder sp&#228;ter installieren; die Registrierungsschl&#252;ssel und Ereignisse erscheinen erst nach diesem Update</td>
+    </tr>
+    <tr>
+      <td><code>Reg Derived</code> oder <code>UEFICA2023Error</code> zeigt <code>[object Object]</code></td>
+      <td>PowerShell 5.1 <code>ConvertTo-Json</code> hat einen null-artigen Registrierungswert als <code>{}</code> serialisiert</td>
+      <td>Dashboard v3.0 behandelt <code>{}</code> automatisch als Null und zeigt <code>&mdash;</code>. Kein Handlungsbedarf; der Status-Token wird dennoch korrekt aus dem Ereignisprotokoll berechnet.</td>
+    </tr>
+    <tr>
+      <td>BIOS Ready zeigt <code>Not in List</code> f&#252;r ein bekanntes HP- oder Dell-Ger&#228;t</td>
+      <td>Modell-String aus WMI passt zu keinem Tabelleneintrag bei &ge; 60% &#196;hnlichkeit</td>
+      <td><strong>Gematchter Tabelleneintrag</strong> und <strong>Match-Methode</strong> im Zeilendetail pr&#252;fen. Falls kein Treffer gefunden: Modell-String als zus&#228;tzlichen Schl&#252;ssel in der Tabelle im Dashboard-HTML erg&#228;nzen.</td>
+    </tr>
+    <tr>
+      <td>Ger&#228;t zeigt falschen BIOS-Tabellen-Match</td>
+      <td>Jaccard-Fuzzy-Match hat einen &#228;hnlichen, aber falschen Eintrag ausgew&#228;hlt</td>
+      <td>Der kritische Token-Guard verhindert generationsbedingte Fehltreffer (G3 &ne; G5). Falls ein falscher Match angezeigt wird, exakten Schl&#252;ssel f&#252;r das Ger&#228;temodell im Dashboard-HTML hinzuf&#252;gen.</td>
+    </tr>
+    <tr>
+      <td>JSON-Parse-Fehler beim Import</td>
+      <td>Fehlerhafte oder leere JSON-Datei</td>
+      <td>Parse-Fehler in der Aggregator-Zusammenfassung pr&#252;fen. Der Aggregator &#252;berspringt und protokolliert nicht parsierbare Dateien.</td>
+    </tr>
+    <tr>
+      <td>Alle Ger&#228;te werden als veraltet angezeigt</td>
+      <td>Collector-GPO l&#228;uft nicht oder Freigabepfad falsch</td>
+      <td>GPO-Verkn&#252;pfung und Anwendung pr&#252;fen (<code>gpresult /r</code>). Sicherstellen, dass <code>$CollectorShare</code> im Skript mit dem tats&#228;chlichen UNC-Pfad &#252;bereinstimmt.</td>
+    </tr>
+    <tr>
+      <td>Modellspalte ist f&#252;r alle Ger&#228;te leer</td>
+      <td>JSON-Dateien wurden mit dem v2.1-Collector erfasst</td>
+      <td>Mit v3.0-Collector neu erfassen. Vorhandene v2.1-Dateien werden ansonsten korrekt geladen &mdash; BIOS-Compliance-Daten sind jedoch ohne die Hardware-Felder nicht verf&#252;gbar.</td>
+    </tr>
+    <tr>
+      <td>Freigabe-Schreiben f&#252;r Ger&#228;te schl&#228;gt fehl</td>
+      <td>Dom&#228;nen-Computer haben keine Berechtigung zum Erstellen von Dateien auf der Freigabe</td>
+      <td>NTFS-Berechtigungen pr&#252;fen: Dom&#228;nen-Computer ben&#246;tigen <em>Dateien erstellen / Daten schreiben</em>. Lesen und Auflisten sollte verweigert werden.</td>
+    </tr>
+  </table>
+
+  <h2 id="changelog">Changelog</h2>
+
+  <div class="changelog-entry">
+    <span class="changelog-version">v3.0</span><span class="changelog-date">Juni 2026</span>
+    <ul>
+      <li>Collector: OS-Felder (<code>OSCaption</code>, <code>OSBuildNumber</code>), Hardware-Felder (<code>SystemManufacturer</code>, <code>SystemModel</code>), BIOS-Felder (<code>BIOSVersion</code>, <code>BIOSVersionParsed</code>, <code>BIOSReleaseDate</code>), Plattform-Felder (<code>IsVirtualMachine</code>, <code>SecureBootStatus</code>) hinzugef&#252;gt</li>
+      <li>BIOS-Compliance-Tabellen (HP ~250 Eintr&#228;ge, Dell ~300 Eintr&#228;ge) vom Collector-Skript ins Dashboard-HTML verlagert &mdash; Tabellen durch Bearbeiten des HTML aktualisierbar, keine erneute Erfassung n&#246;tig</li>
+      <li>Dashboard: BIOS-Compliance live beim Import via 3-stufigem Modell-Matching berechnet (exakt &rarr; Token-Teilmenge &rarr; Jaccard &ge;60%) mit kritischem Token-Guard gegen generationsbedingte Fehltreffer</li>
+      <li>Dashboard: neue Spalte <strong>Modell</strong> und <strong>BIOS Ready</strong> (ersetzt HP-SBKPFV3-Spalte)</li>
+      <li>Dashboard: Panel <strong>BIOS Compliance &mdash; HP &amp; Dell</strong> mit herstellerspezifischer Aufschl&#252;sselung (ersetzt HP-only-Panel)</li>
+      <li>Dashboard: Filter <strong>BIOS-Update erforderlich</strong> (ersetzt HP-only-Filter)</li>
+      <li>Dashboard: Hardware-&-OS- und BIOS-Details-Abschnitte im Zeilendetail hinzugef&#252;gt</li>
+      <li>Dashboard: <code>[object Object]</code>-Anzeigefehler f&#252;r <code>RegDerivedStatus</code>- und <code>RegError</code>-Felder, die von PowerShell 5.1 als <code>{}</code> serialisiert werden, behoben</li>
+      <li>Aggregator: alle v3.0-Hardware-Felder in kombinierte JSON und CSV aufgenommen; v2.1-Feldzuordnungsfehler behoben (<code>BucketId</code>&rarr;<code>BucketHash</code>, fehlende <code>RegDerivedStatus</code>/<code>RegErrorEvent</code>/<code>StatusDetail</code>)</li>
+    </ul>
+  </div>
+
+  <div class="changelog-entry">
+    <span class="changelog-version">v2.1</span><span class="changelog-date">Mai 2026</span>
+    <ul>
+      <li>Registrierungs-prim&#228;re Statusableitung: <code>UEFICA2023Status</code> und <code>UEFICA2023Error</code> als Prim&#228;rquelle; Ereignisprotokoll als Fallback und Detail</li>
+      <li>HP-SBKPFV3-Pr&#252;fung via <code>Win32_ComputerSystemProduct.Version</code></li>
+      <li>HP-BIOS-Mindestversions-Tabelle im Collector hinzugef&#252;gt</li>
+      <li>Aggregator: kombinierte JSON mit Metadaten-Header und Statusgruppierungen</li>
+    </ul>
+  </div>
+
+  <div class="changelog-entry">
+    <span class="changelog-version">v2.0</span><span class="changelog-date">April 2026</span>
+    <ul>
+      <li>Vollst&#228;ndige CA-2023-Ereignisprotokoll-Analyse (20 Ereignis-IDs, TPM-WMI-Provider)</li>
+      <li>ConfidenceLevel- und BucketHash-Erfassung</li>
+      <li>Dashboard mit Zusammenfassungskarten, Confidence-Panel, Filtern, sortierbarer Tabelle, erweiterbaren Zeilen</li>
+      <li>CSV- und HTML-Bericht-Export</li>
+    </ul>
+  </div>
+
+</main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('h2[id], h3[id]');
+const tocItems  = document.querySelectorAll('.toc-item');
+const observer  = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      tocItems.forEach(t => t.classList.remove('active'));
+      const active = document.querySelector('.toc-item[href="#' + e.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-10% 0px -80% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
